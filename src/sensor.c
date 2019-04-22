@@ -16,8 +16,19 @@
 #include "sensor.h"
 #include "driverlib/gpio.h"
 #include "driverlib/adc.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/ssi.h"
+
+// FreeRTOS includes
+#include "FreeRTOSConfig.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "timers.h"
 
 extern uint32_t g_ui32SysClock;
+extern TaskHandle_t TempTaskHandle;
+extern TaskHandle_t SMTaskHandle;
 
 void adc_init()
 {
@@ -82,6 +93,7 @@ void TemperatureTask(void *pvParameters)
     while(1)
     {
         // Wait for notification from the timer to take reading from sensors
+        xTaskNotifyWait(0xffffffff,0xffffffff,NULL,portMAX_DELAY);
         // Take the reading from the sensor
         // Send it to the queue of the SPI task
     }
@@ -91,12 +103,14 @@ void TemperatureTask(void *pvParameters)
 void TemperatureCallback(TimerHandle_t xtimer)
 {
     // Notify the task to take the readings
+    xTaskNotify(TempTaskHandle, 1, eNoAction);
 }
 
 
 void SoilMoistureTask(void *pvParameters)
 {
     // Initialize the soil moisture sensor ADC.
+    adc_init();
     // Initialize the timer for periodic measurements
     TimerHandle_t TakeSoilReadings = xTimerCreate("TakeSoilMoisture", pdMS_TO_TICKS(1000), pdTRUE, (void*)0, MoistureCallback);
     //  Start the timer after 100ms
@@ -104,7 +118,16 @@ void SoilMoistureTask(void *pvParameters)
     while(1)
     {
         // Wait for notification from the timer to take reading from sensors
+        xTaskNotifyWait(0xffffffff,0xffffffff,NULL,portMAX_DELAY);
         // Take the reading from the sensor
+
         // Send it to the queue of the SPI task
     }
+}
+
+
+void MoistureCallback(TimerHandle_t xtimer)
+{
+    // Notify the task to take the readings
+    xTaskNotify(SMTaskHandle, 1, eNoAction);
 }

@@ -43,8 +43,9 @@ void motor_control_init();
 void motor_control_config(uint32_t period_in_khz, uint8_t duty_cycle);
 void TXFF_interrupt();
 
-int i = 0;
-bool send_data = true;
+TaskHandle_t TempTaskHandle;
+TaskHandle_t SMTaskHandle;
+
 // Main function
 int main(void)
 {
@@ -56,10 +57,15 @@ int main(void)
 
     Logger_Init();
     UARTStdioConfig(0, 115200, g_ui32SysClock);
+
+    // Creating all the required task
+    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, TempTaskHandle);
+    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, SMTaskHandle);
+
 //    SYSTEM_CLOCK
 //    SPI testing
-    int x = 5;
-    uint8_t data;
+//    int x = 5;
+//    uint8_t data;
     spi_init(SLAVE, 500000);
 //    spi_data_write(x++, 1);
 //    int buffer[6] = {0x05,0x06,0x09,0xab,0x55,0x45};
@@ -75,13 +81,13 @@ int main(void)
 //        adc_value = adc_get_data();
 //        UARTprintf("adc_value = %d\n\r",adc_value);
 //    }
-    while(1)
-    {
-            send_data = false;
-            spi_data_write(x, 1);
-            data = spi_data_read();
-            UARTprintf("data is %x",data);
-    }
+//    while(1)
+//    {
+//            send_data = false;
+//            spi_data_write(x, 1);
+//            data = spi_data_read();
+//            UARTprintf("data is %x",data);
+//    }
 
 
 //    LCD testing
@@ -130,11 +136,9 @@ void motor_control_config(uint32_t period_in_khz, uint8_t duty_cycle)
 
 void TXFF_interrupt()
 {
-    send_data = true;
     SSIIntClear(SSI2_BASE, SSI_TXEOT);
     SSIIntDisable(SSI2_BASE, SSI_TXEOT);
     UARTprintf("Interrupt happened");
-    i++;
 }
 
 /*  ASSERT() Error function
