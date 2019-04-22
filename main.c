@@ -27,6 +27,8 @@
 #include "src/LCDdriver.h"
 #include "driverlib/gpio.h"
 #include "driverlib/adc.h"
+#include "src/Logger.h"
+#include "src/sensor.h"
 
 #include "driverlib/pwm.h"
 #include "driverlib/pin_map.h"
@@ -39,7 +41,10 @@ uint32_t g_ui32SysClock;
 
 void motor_control_init();
 void motor_control_config(uint32_t period_in_khz, uint8_t duty_cycle);
+void TXFF_interrupt();
 
+int i = 0;
+bool send_data = true;
 // Main function
 int main(void)
 {
@@ -48,9 +53,35 @@ int main(void)
                                (SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN |
                                 SYSCTL_USE_PLL | SYSCTL_CFG_VCO_480),
                                 SYSTEM_CLOCK);
+
+    Logger_Init();
+    UARTStdioConfig(0, 115200, g_ui32SysClock);
 //    SYSTEM_CLOCK
 //    SPI testing
-//    spi_init(MASTER, 250000);
+    int x = 5;
+    uint8_t data;
+    spi_init(SLAVE, 500000);
+//    spi_data_write(x++, 1);
+//    int buffer[6] = {0x05,0x06,0x09,0xab,0x55,0x45};
+//    SSIIntRegister(SSI2_BASE, TXFF_interrupt);
+//    SSIIntClear(SSI2_BASE, SSI_TXEOT);
+//    SSIIntEnable(SSI2_BASE, SSI_TXEOT);
+
+//    ADC testing
+//    uint32_t adc_value;
+//    adc_init();
+//    while(1)
+//    {
+//        adc_value = adc_get_data();
+//        UARTprintf("adc_value = %d\n\r",adc_value);
+//    }
+    while(1)
+    {
+            send_data = false;
+            spi_data_write(x, 1);
+            data = spi_data_read();
+            UARTprintf("data is %x",data);
+    }
 
 
 //    LCD testing
@@ -66,8 +97,8 @@ int main(void)
 //    lcd_print_float(23.56);
 
 //    PWM test
-    motor_control_init();
-    motor_control_config(500, 25);
+//    motor_control_init();
+//    motor_control_config(500, 25);
     return 0;
 }
 
@@ -97,42 +128,13 @@ void motor_control_config(uint32_t period_in_khz, uint8_t duty_cycle)
 }
 
 
-// Flash the LEDs on the launchpad
-void demoLEDTask(void *pvParameters)
+void TXFF_interrupt()
 {
-    for (;;)
-    {
-        // Turn on LED 1
-        LEDWrite(0x0F, 0x01);
-        vTaskDelay(1000);
-
-        // Turn on LED 2
-        LEDWrite(0x0F, 0x02);
-        vTaskDelay(1000);
-
-        // Turn on LED 3
-        LEDWrite(0x0F, 0x04);
-        vTaskDelay(1000);
-
-        // Turn on LED 4
-        LEDWrite(0x0F, 0x08);
-        vTaskDelay(1000);
-    }
-}
-
-
-// Write text over the Stellaris debug interface UART port
-void demoSerialTask(void *pvParameters)
-{
-    // Set up the UART which is connected to the virtual COM port
-    UARTStdioConfig(0, 57600, SYSTEM_CLOCK);
-
-
-    for (;;)
-    {
-        UARTprintf("\r\nHello, world from FreeRTOS 9.0!");
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
-    }
+    send_data = true;
+    SSIIntClear(SSI2_BASE, SSI_TXEOT);
+    SSIIntDisable(SSI2_BASE, SSI_TXEOT);
+    UARTprintf("Interrupt happened");
+    i++;
 }
 
 /*  ASSERT() Error function
