@@ -62,12 +62,15 @@ int main(void)
     Logger_Init();
     UARTStdioConfig(0, 115200, g_ui32SysClock);
 
+    UARTprintf("Creating tasks\n");
+
     // Creating all the required task
-//    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, TempTaskHandle);
-//    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, SMTaskHandle);
-    xTaskCreate(InterBoardSPI, "InterBoardCom", 256, NULL, 1, IBTaskHandle);
+    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, &TempTaskHandle);
+    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, &SMTaskHandle);
+    xTaskCreate(InterBoardSPI, "InterBoardCom", 256, NULL, 1, &IBTaskHandle);
 
     vTaskStartScheduler();
+    UARTprintf("I should not have come here\n");
 
 //    SYSTEM_CLOCK
 //    int buffer[6] = {0x05,0x06,0x09,0xab,0x55,0x45};

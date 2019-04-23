@@ -25,6 +25,7 @@ extern uint32_t g_ui32SysClock;
 QueueHandle_t IBQueue;
 uint8_t trid;
 uint16_t packet;
+extern TaskHandle_t IBTaskHandle;
 
 void spi_init(uint32_t mode, uint32_t clk_speed)
 {
@@ -57,8 +58,10 @@ uint16_t spi_data_read()
 
 void InterBoardSPI(void *pvParameters)
 {
+//    UARTprintf("SPI task\n");
 //    SPI testing
     uint16_t received_data;
+    uint16_t control_message;
     IBStruct rec_msg;
 
     //Initialize the queue
@@ -66,35 +69,41 @@ void InterBoardSPI(void *pvParameters)
 
     spi_init(SLAVE, 500000);
 
-    TimerHandle_t StartSend = xTimerCreate("Test", pdMS_TO_TICKS(1000), pdTRUE, (void*)1, TestCallback);
-    BaseType_t return_val = xTimerStart(StartSend, pdMS_TO_TICKS(100));
-
     while(1)
     {
 //      Wait till the message is received from queue
         xQueueReceive(IBQueue, &rec_msg, portMAX_DELAY);
-//      get the structured buffer of values to send
+//      Increase priority of task
+        vTaskPrioritySet(IBTaskHandle, 2);
+//      structure packet of values to send
         packet = ((uint16_t)++trid<<8) | rec_msg.source;
-//      Send the data the beagle bone black (5 bytes)
+        UARTprintf("source - packet - data is %x - %x - %x\n",rec_msg.source,packet,rec_msg.data);
+//      Send the packet the beagle bone black
         spi_data_write(packet, 1);
         received_data = spi_data_read();
         UARTprintf("RX 1 - %x\n\r",received_data);
+
+//      Send the data to beagle bone black
         spi_data_write(rec_msg.data, 1);
         received_data = spi_data_read();
         UARTprintf("RX 2 - %x\n\r",received_data);
         spi_data_write(packet, 1);
+
 //      wait till valid control message is received from beagle bone green
+        control_message = spi_data_read();
+        UARTprintf("Control Message - %x\n\r",control_message);
 //      send the message using queue to corresponding actuator.
-//      repeat all the steps
+//      Restore priority of task to original
+        vTaskPrioritySet(IBTaskHandle, 1);
     }
 }
 
-void TestCallback(TimerHandle_t xtimer)
-{
-    // Notify the task to take the readings
-    static uint16_t data = 0x5050;
-    IBStruct data_to_send;
-    data_to_send.source = 0x30;
-    data_to_send.data = data ++;
-    xQueueSend(IBQueue, &data_to_send, pdMS_TO_TICKS(0));
-}
+//void TestCallback(TimerHandle_t xtimer)
+//{
+//    // Notify the task to take the readings
+//    static uint16_t data = 0x5050;
+//    IBStruct data_to_send;
+//    data_to_send.source = 0x30;
+//    data_to_send.data = data ++;
+//    xQueueSend(IBQueue, &data_to_send, pdMS_TO_TICKS(0));
+//}
