@@ -10,7 +10,13 @@
 #include "driverlib/ssi.h"
 
 #define MASTER SSI_MODE_MASTER
-#define SLAVE SSI_MODE_SLAVE
+#define SLAVE  SSI_MODE_SLAVE
+
+typedef struct
+{
+    uint8_t source;
+    uint16_t data;
+}IBStruct;
 
 /*
  * Function name: spi_init()
@@ -40,6 +46,9 @@ void spi_data_write(uint64_t data_to_write, uint8_t no_of_bytes);
  * @param:        void
  * @return:       uint8_t (data in the SPI data register is returned)
  */
-uint8_t spi_data_read();
+uint16_t spi_data_read();
+
+void InterBoardSPI(void *pvParameters);
+void TestCallback();
 
 #endif /* SRC_SPI_H_ */

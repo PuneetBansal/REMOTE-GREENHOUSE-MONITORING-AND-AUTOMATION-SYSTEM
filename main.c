@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "main.h"
 #include "drivers/pinout.h"
 #include "utils/uartstdio.h"
@@ -22,6 +23,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "timers.h"
 
 #include "src/spi.h"
 #include "src/LCDdriver.h"
@@ -42,9 +44,11 @@ uint32_t g_ui32SysClock;
 void motor_control_init();
 void motor_control_config(uint32_t period_in_khz, uint8_t duty_cycle);
 void TXFF_interrupt();
+void TestCallback();
 
 TaskHandle_t TempTaskHandle;
 TaskHandle_t SMTaskHandle;
+TaskHandle_t IBTaskHandle;
 
 // Main function
 int main(void)
@@ -59,15 +63,13 @@ int main(void)
     UARTStdioConfig(0, 115200, g_ui32SysClock);
 
     // Creating all the required task
-    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, TempTaskHandle);
-    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, SMTaskHandle);
+//    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, TempTaskHandle);
+//    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, SMTaskHandle);
+    xTaskCreate(InterBoardSPI, "InterBoardCom", 256, NULL, 1, IBTaskHandle);
+
+    vTaskStartScheduler();
 
 //    SYSTEM_CLOCK
-//    SPI testing
-//    int x = 5;
-//    uint8_t data;
-    spi_init(SLAVE, 500000);
-//    spi_data_write(x++, 1);
 //    int buffer[6] = {0x05,0x06,0x09,0xab,0x55,0x45};
 //    SSIIntRegister(SSI2_BASE, TXFF_interrupt);
 //    SSIIntClear(SSI2_BASE, SSI_TXEOT);
@@ -81,12 +83,39 @@ int main(void)
 //        adc_value = adc_get_data();
 //        UARTprintf("adc_value = %d\n\r",adc_value);
 //    }
+//      SPI testing
+//    static uint8_t trid;
+//    int i;
+//    uint16_t packet;
+//    uint8_t source1 = 0x30;
+//    uint8_t source2 = 0x03;
+//    uint16_t data;
+//    uint16_t value = 0xcc55;
+//    spi_init(SLAVE, 500000);
+//    spi_data_write(0x0011, 1);
+//    UARTprintf("Going inside while\n");
 //    while(1)
 //    {
-//            send_data = false;
-//            spi_data_write(x, 1);
-//            data = spi_data_read();
-//            UARTprintf("data is %x",data);
+//        packet = (uint16_t)++trid<<8 | source1;
+//        spi_data_write(packet, 1);
+//        data = spi_data_read();
+//        UARTprintf("RX 1 - %x\n\r",data);
+//        spi_data_write(value, 1);
+//        data = spi_data_read();
+//        UARTprintf("RX 2 - %x\n\r",data);
+//        spi_data_write(packet, 1);
+//        for(i = 0; i<10000; i++);
+//        for(i = 0; i<10000; i++);
+//        for(i = 0; i<10000; i++);
+//
+//        packet = (uint16_t)++trid<<8 | source2;
+//        spi_data_write(packet, 1);
+//        data = spi_data_read();
+//        UARTprintf("RX 1 - %x\n\r",data);
+//        spi_data_write(0xcc66, 1);
+//        data = spi_data_read();
+//        UARTprintf("RX 2 - %x\n\r",data);
+//        spi_data_write(packet, 1);
 //    }
 
 
@@ -105,9 +134,29 @@ int main(void)
 //    PWM test
 //    motor_control_init();
 //    motor_control_config(500, 25);
+
+//  Temperature Sensor testing
+//    char tempbuffer[10];
+//    uint16_t buffer;
+//    uint32_t i;
+//    float temp;
+//    spi_init(MASTER, 100000);
+//    while(1)
+//    {
+//        spi_data_write(0x1234,1);
+//        buffer = spi_data_read();
+//        temp = temperature(buffer);
+//        UARTprintf("D2 is %d\n",((buffer>>2) && 0x01));
+//        sprintf(tempbuffer,"%f",temp);
+//        UARTprintf("Temperature is %s\n",tempbuffer);
+//        for(i=0; i<1000000; i++);
+//        for(i=0; i<1000000; i++);
+//        for(i=0; i<1000000; i++);
+//        for(i=0; i<1000000; i++);
+//        for(i=0; i<1000000; i++);
+//    }
     return 0;
 }
-
 
 void motor_control_init()
 {
