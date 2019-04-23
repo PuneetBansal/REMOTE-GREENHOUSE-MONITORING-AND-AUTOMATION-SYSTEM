@@ -23,9 +23,10 @@
 
 extern uint32_t g_ui32SysClock;
 QueueHandle_t IBQueue;
-uint8_t trid;
+uint8_t trid = 0x00;
 uint16_t packet;
 extern TaskHandle_t IBTaskHandle;
+int prev_state;
 
 void spi_init(uint32_t mode, uint32_t clk_speed)
 {
@@ -46,7 +47,7 @@ void spi_init(uint32_t mode, uint32_t clk_speed)
 
 void spi_data_write(uint64_t data_to_write, uint8_t no_of_bytes)
 {
-        SSIDataPut(SSI2_BASE, (uint16_t)data_to_write);
+    SSIDataPut(SSI2_BASE, (uint16_t)data_to_write);
 }
 
 uint16_t spi_data_read()
@@ -63,18 +64,21 @@ void InterBoardSPI(void *pvParameters)
     uint16_t received_data;
     uint16_t control_message;
     IBStruct rec_msg;
+    prev_state = 0;
 
     //Initialize the queue
-    IBQueue = xQueueCreate( 10, sizeof(IBStruct));
+    IBQueue = xQueueCreate( 15, sizeof(IBStruct));
 
     spi_init(SLAVE, 500000);
 
+    spi_data_write(0x0011, 1);
     while(1)
     {
+//        test_function();
 //      Wait till the message is received from queue
         xQueueReceive(IBQueue, &rec_msg, portMAX_DELAY);
 //      Increase priority of task
-        vTaskPrioritySet(IBTaskHandle, 2);
+//        vTaskPrioritySet(IBTaskHandle, 2);
 //      structure packet of values to send
         packet = ((uint16_t)++trid<<8) | rec_msg.source;
         UARTprintf("source - packet - data is %x - %x - %x\n",rec_msg.source,packet,rec_msg.data);
@@ -92,18 +96,84 @@ void InterBoardSPI(void *pvParameters)
 //      wait till valid control message is received from beagle bone green
         control_message = spi_data_read();
         UARTprintf("Control Message - %x\n\r",control_message);
+
+        decode_message(control_message);
 //      send the message using queue to corresponding actuator.
 //      Restore priority of task to original
-        vTaskPrioritySet(IBTaskHandle, 1);
+//        vTaskPrioritySet(IBTaskHandle, 1);
     }
 }
 
-//void TestCallback(TimerHandle_t xtimer)
-//{
-//    // Notify the task to take the readings
-//    static uint16_t data = 0x5050;
-//    IBStruct data_to_send;
-//    data_to_send.source = 0x30;
-//    data_to_send.data = data ++;
-//    xQueueSend(IBQueue, &data_to_send, pdMS_TO_TICKS(0));
-//}
+void decode_message(uint16_t ctrl_msg)
+{
+    if(ctrl_msg & 0x00ff == 0x0055)
+    {
+        //Send the data to the fan actuator queue
+    }
+    else if(ctrl_msg & 0xff == 0x00AA)
+    {
+        //send the data to the motor actuator queue
+    }
+}
+
+
+void test_function()
+{
+    uint32_t buffer;
+    IBStruct rec_msg;
+    uint16_t received_data;
+    uint16_t control_message;
+    int bytes_rec;
+    static uint8_t state = STATE_SEND_TRID;
+
+    switch(state)
+    {
+    case STATE_SEND_TRID:
+        UARTprintf("In state 1\n");
+        xQueueReceive(IBQueue, &rec_msg, portMAX_DELAY);
+        packet = ((uint16_t)++trid<<8) | rec_msg.source;
+        UARTprintf("source - packet - data is %x - %x - %x\n",rec_msg.source,packet,rec_msg.data);
+        if(prev_state == state)
+        {
+            spi_data_write((uint16_t)packet, 1);
+            prev_state = 1;
+        }
+        bytes_rec = SSIDataGetNonBlocking(SSI2_BASE, &buffer);
+        UARTprintf("RX 1 - %x\n\r",buffer);
+        if(bytes_rec != 0 && buffer == 0x01)
+        {
+            state = STATE_SEND_DATA;
+        }
+        else if(bytes_rec != 0 && buffer == 0x02)
+        {
+            UARTprintf("Get data again for sync\n");
+        }
+        else
+        {
+            UARTprintf("Bhai khud dekh lena control\n");
+        }
+        break;
+    case STATE_SEND_DATA:
+        UARTprintf("In state 2\n");
+        if(prev_state == state)
+        {
+            spi_data_write(rec_msg.data, 1);
+            prev_state = 2;
+        }
+        bytes_rec = SSIDataGetNonBlocking(SSI2_BASE, &buffer);
+        UARTprintf("RX 2 - %x\n\r",buffer);
+        if(buffer == 0x02 && bytes_rec != 0)
+        {
+            state = STATE_GET_CTRL;
+            spi_data_write(packet, 1);
+        }
+        break;
+    case STATE_GET_CTRL:
+        UARTprintf("In state 3\n");
+        bytes_rec = SSIDataGetNonBlocking(SSI2_BASE, &buffer);
+        UARTprintf("Control Message - %x\n\r",buffer);
+        state = STATE_SEND_TRID;
+        prev_state = 2;
+        break;
+    }
+}

@@ -12,6 +12,10 @@
 #define MASTER SSI_MODE_MASTER
 #define SLAVE  SSI_MODE_SLAVE
 
+#define STATE_SEND_TRID 0x01
+#define STATE_SEND_DATA 0x02
+#define STATE_GET_CTRL  0x03
+
 typedef struct
 {
     uint8_t source;
@@ -26,7 +30,7 @@ typedef struct
  * @Comments    : Mode can only be MASTER or SLAVE
  * @return      : void
  */
-void spi_init(uint32_t mode, uint32_t clk_speed);
+void spi_init(uint32_t, uint32_t);
 
 
 /*
@@ -37,7 +41,7 @@ void spi_init(uint32_t mode, uint32_t clk_speed);
  * @Comments    : Maximum of 8 bytes of data can be written at a time.
  * @return      : void
  */
-void spi_data_write(uint64_t data_to_write, uint8_t no_of_bytes);
+void spi_data_write(uint64_t, uint8_t);
 
 
 /*
@@ -57,4 +61,14 @@ uint16_t spi_data_read();
  */
 void InterBoardSPI(void *pvParameters);
 
+
+/*
+ * Function name: decode_message()
+ * Description  : This function gets the source from the control message and parameter and
+ *                passes the actuation message to appropriate queue of actuator.
+ * @param       : uint16_t (control message received from the beagle bone)
+ * @return      : void
+ */
+void decode_message(uint16_t ctrl_msg);
+void test_function();
 #endif /* SRC_SPI_H_ */

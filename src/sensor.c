@@ -34,6 +34,8 @@ extern TaskHandle_t TempTaskHandle;
 extern TaskHandle_t SMTaskHandle;
 extern QueueHandle_t IBQueue;
 
+uint16_t temp_data;
+
 void moisture_sensor_init()
 {
     SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
@@ -48,13 +50,15 @@ void moisture_sensor_init()
 uint32_t moisture_data()
 {
     uint32_t data;
+    int i;
     ADCProcessorTrigger(ADC0_BASE, SEQUENCE_NO);
-    while(!ADCIntStatus(ADC0_BASE, SEQUENCE_NO, false))
-    {
-    }
+//    while(!ADCIntStatus(ADC0_BASE, SEQUENCE_NO, false))
+//    {
+//    }
+    for(i=0; i<10000; i++);
     ADCIntClear(ADC0_BASE, SEQUENCE_NO);
     ADCSequenceDataGet(ADC0_BASE, SEQUENCE_NO, &data);
-    SysCtlDelay(g_ui32SysClock / 12);
+//    SysCtlDelay(g_ui32SysClock / 12);
     return data;
 }
 
@@ -95,6 +99,14 @@ void TemperatureTask(void *pvParameters)
     data_to_send.source = TEMP_SOURCE_ID;
     /* Initialize the temperature sensor */
     temp_sens_init(MASTER, TEMP_SPI_CLK);
+
+    /* BIST */
+    temp_data = temp_data_get()>>3;
+    if(temp_data == 0)
+    {
+        UARTprintf("Temp sen BIST failed\n");
+    }
+
     /* Initialize the timer for periodic measurements */
     TimerHandle_t TakeTempReadings = xTimerCreate("TakeTemperature", pdMS_TO_TICKS(2000), pdTRUE, (void*)0, TemperatureCallback);
     /* Start the timer after 100ms */
@@ -106,7 +118,8 @@ void TemperatureTask(void *pvParameters)
 //        UARTprintf("Temp task notify reading\n");
 
         /* Take the reading from the sensor */
-        data_to_send.data = temp_data_get()>>3;
+//        data_to_send.data = temp_data_get()>>3;
+        data_to_send.data = temp_data;
 
         /* Send it to the queue of the SPI task */
         xQueueSend(IBQueue, &data_to_send, pdMS_TO_TICKS(0));
@@ -117,9 +130,23 @@ void TemperatureTask(void *pvParameters)
 void TemperatureCallback(TimerHandle_t xtimer)
 {
     /* Notify the task to take the readings */
+    static int x = 0;
     if(TempTaskHandle != NULL)
     {
-        xTaskNotify(TempTaskHandle, 1, eSetBits);
+        temp_data = temp_data_get()>>3;
+        if(temp_data != 0)
+        {
+            xTaskNotify(TempTaskHandle, 1, eSetBits);
+            x = 0;
+        }
+        else
+        {
+            if(x == 0)
+            {
+                UARTprintf("Sensor disconnected\n");
+                x = 1;
+            }
+        }
     }
 }
 
@@ -134,7 +161,7 @@ void SoilMoistureTask(void *pvParameters)
     // Initialize the timer for periodic measurements */
     TimerHandle_t TakeSoilReadings = xTimerCreate("TakeSoilMoisture", pdMS_TO_TICKS(2000), pdTRUE, (void*)0, MoistureCallback);
     /*  Start the timer after 100ms */
-    BaseType_t return_val = xTimerStart(TakeSoilReadings, pdMS_TO_TICKS(1000));
+    BaseType_t return_val = xTimerStart(TakeSoilReadings, pdMS_TO_TICKS(100));
     if(return_val != pdPASS)
     {
         UARTprintf("Moisture timer failed\n");
