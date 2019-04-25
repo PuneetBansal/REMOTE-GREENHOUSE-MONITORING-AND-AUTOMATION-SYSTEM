@@ -28,11 +28,13 @@
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
+#include "actuator.h"
 
 extern uint32_t g_ui32SysClock;
 extern TaskHandle_t TempTaskHandle;
 extern TaskHandle_t SMTaskHandle;
 extern QueueHandle_t IBQueue;
+extern QueueHandle_t LCDQueue;
 
 uint16_t temp_data;
 
@@ -95,8 +97,12 @@ uint16_t temp_data_get()
 
 void TemperatureTask(void *pvParameters)
 {
-    IBStruct data_to_send;
-    data_to_send.source = TEMP_SOURCE_ID;
+    IBStruct dataToSendToIB;
+    LCDStruct dataToSendToLCD;
+
+    dataToSendToIB.source = TEMP_SOURCE_ID;
+    dataToSendToLCD.source = TEMP_SOURCE_ID;
+
     /* Initialize the temperature sensor */
     temp_sens_init(MASTER, TEMP_SPI_CLK);
 
@@ -119,10 +125,12 @@ void TemperatureTask(void *pvParameters)
 
         /* Take the reading from the sensor */
 //        data_to_send.data = temp_data_get()>>3;
-        data_to_send.data = temp_data;
+        dataToSendToIB.data = temp_data;
+        dataToSendToLCD.sensing_data = temp_data;
 
         /* Send it to the queue of the SPI task */
-        xQueueSend(IBQueue, &data_to_send, pdMS_TO_TICKS(0));
+        xQueueSend(IBQueue, &dataToSendToIB, pdMS_TO_TICKS(0));
+        xQueueSend(LCDQueue, &dataToSendToLCD, pdMS_TO_TICKS(0));
     }
 }
 
@@ -154,8 +162,13 @@ void TemperatureCallback(TimerHandle_t xtimer)
 void SoilMoistureTask(void *pvParameters)
 {
     UARTprintf("Moist task\n");
+
     IBStruct data_to_send;
+    LCDStruct dataTOSendTOLCD;
+
     data_to_send.source = SM_SOURCE_ID;
+    dataTOSendTOLCD.source = SM_SOURCE_ID;
+
     /* Initialize the soil moisture sensor ADC. */
     moisture_sensor_init();
     // Initialize the timer for periodic measurements */
@@ -174,9 +187,11 @@ void SoilMoistureTask(void *pvParameters)
 
         /* Take the reading from the sensor */
         data_to_send.data = moisture_data();
+        dataTOSendTOLCD.sensing_data = data_to_send.data;
 
         /* Send it to the queue of the SPI task */
         xQueueSend(IBQueue, &data_to_send, pdMS_TO_TICKS(0));
+        xQueueSend(LCDQueue, &dataTOSendTOLCD, pdMS_TO_TICKS(0));
     }
 }
 
