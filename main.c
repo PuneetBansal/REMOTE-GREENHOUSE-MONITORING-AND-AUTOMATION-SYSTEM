@@ -65,12 +65,12 @@ int main(void)
     UARTprintf("Creating tasks\n");
 
     // Creating all the required task
-    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, &TempTaskHandle);
-    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, &SMTaskHandle);
-    xTaskCreate(InterBoardSPI, "InterBoardCom", 256, NULL, 1, &IBTaskHandle);
-
-    vTaskStartScheduler();
-    UARTprintf("I should not have come here\n");
+//    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, &TempTaskHandle);
+//    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, &SMTaskHandle);
+//    xTaskCreate(InterBoardSPI, "InterBoardCom", 256, NULL, 1, &IBTaskHandle);
+//
+//    vTaskStartScheduler();
+//    UARTprintf("I should not have come here\n");
 
 //    SYSTEM_CLOCK
 //    int buffer[6] = {0x05,0x06,0x09,0xab,0x55,0x45};
@@ -123,16 +123,16 @@ int main(void)
 
 
 //    LCD testing
-//    lcd_init();
-//    lcd_on();
-//    lcd_write_string("Temp  : 23.576");
-//    lcd_pos(1, 0);
-//    lcd_write_string("Mois  : 56%");
-//    lcd_pos(2, 0);
-//    lcd_write_string("Fspeed: 10%");
-//    lcd_pos(3, 0);
-//    lcd_write_string("Motor : ON");
-//    lcd_print_float(23.56);
+    lcd_init();
+    lcd_on();
+    lcd_write_string("Temp  : 23.576");
+    lcd_pos(1, 0);
+    lcd_write_string("Mois  : 56%");
+    lcd_pos(2, 0);
+    lcd_write_string("Fspeed: 10%");
+    lcd_pos(3, 0);
+    lcd_write_string("Motor : ON");
+    lcd_print_float(23.56);
 
 //    PWM test
 //    motor_control_init();

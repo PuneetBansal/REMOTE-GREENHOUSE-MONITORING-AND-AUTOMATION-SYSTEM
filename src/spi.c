@@ -109,10 +109,28 @@ void decode_message(uint16_t ctrl_msg)
     if(ctrl_msg & 0x00ff == 0x0055)
     {
         //Send the data to the fan actuator queue
+        switch(ctrl_msg & 0xff00)
+        {
+        case 0x0000:
+//            send message to fan queue to turn off
+            break;
+        case 0x0100:
+//            send message to fan queue to turn on
+            break;
+        }
     }
-    else if(ctrl_msg & 0xff == 0x00AA)
+    else if(ctrl_msg & 0x00ff == 0x00AA)
     {
         //send the data to the motor actuator queue
+        switch(ctrl_msg & 0xff00)
+        {
+        case 0x0000:
+//            send message to motor queue to turn off
+            break;
+        case 0x0100:
+//            send message to motor queue to turn on
+            break;
+        }
     }
 }
 
@@ -173,7 +191,7 @@ void test_function()
         bytes_rec = SSIDataGetNonBlocking(SSI2_BASE, &buffer);
         UARTprintf("Control Message - %x\n\r",buffer);
         state = STATE_SEND_TRID;
-        prev_state = 2;
+        prev_state = 3;
         break;
     }
 }
