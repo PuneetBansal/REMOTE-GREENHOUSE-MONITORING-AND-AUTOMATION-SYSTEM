@@ -32,6 +32,9 @@
 #include "src/Logger.h"
 #include "src/sensor.h"
 
+/*Additions*/
+#include "src/actuator.h"
+
 #include "driverlib/pwm.h"
 #include "driverlib/pin_map.h"
 
@@ -49,6 +52,10 @@ void TestCallback();
 TaskHandle_t TempTaskHandle;
 TaskHandle_t SMTaskHandle;
 TaskHandle_t IBTaskHandle;
+TaskHandle_t LCDTaskHandle;
+TaskHandle_t MotorTaskHandle;
+TaskHandle_t FanTaskHandle;
+
 
 // Main function
 int main(void)
@@ -68,9 +75,13 @@ int main(void)
 //    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, &TempTaskHandle);
 //    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, &SMTaskHandle);
 //    xTaskCreate(InterBoardSPI, "InterBoardCom", 256, NULL, 1, &IBTaskHandle);
-//
-//    vTaskStartScheduler();
-//    UARTprintf("I should not have come here\n");
+//    xTaskCreate(LCDTask, "LCDTask", 256, NULL, 1, &LCDTaskHandle);
+//    xTaskCreate(MotorTask, "MotorTask", 256, NULL, 1, &MotorTaskHandle);
+//    xTaskCreate(FanTask, "FanTask", 256, NULL, 1, &FanTaskHandle);
+
+
+    vTaskStartScheduler();
+    UARTprintf("I should not have come here\n");
 
 //    SYSTEM_CLOCK
 //    int buffer[6] = {0x05,0x06,0x09,0xab,0x55,0x45};

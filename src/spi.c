@@ -20,12 +20,18 @@
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
+#include "actuator.h"
 
 extern uint32_t g_ui32SysClock;
 QueueHandle_t IBQueue;
+extern QueueHandle_t LCDQueue;
 uint8_t trid = 0x00;
 uint16_t packet;
 extern TaskHandle_t IBTaskHandle;
+extern TaskHandle_t FanTaskHandle;
+extern TaskHandle_t MotorTaskHandle;
+
+
 int prev_state;
 
 void spi_init(uint32_t mode, uint32_t clk_speed)
@@ -106,8 +112,14 @@ void InterBoardSPI(void *pvParameters)
 
 void decode_message(uint16_t ctrl_msg)
 {
+    LCDStruct dataToSend;
+    uint8_t actual_msg= (ctrl_msg >> 8);
     if(ctrl_msg & 0x00ff == 0x0055)
     {
+        dataToSend.source=0x55;
+        dataToSend.actuation_data=actual_msg;
+        xQueueSend(LCDQueue, &dataToSend, pdMS_TO_TICKS(0));
+        xTaskNotify(FanTaskHandle,actual_msg, eSetValueWithoutOverwrite);
         //Send the data to the fan actuator queue
         switch(ctrl_msg & 0xff00)
         {
@@ -121,6 +133,10 @@ void decode_message(uint16_t ctrl_msg)
     }
     else if(ctrl_msg & 0x00ff == 0x00AA)
     {
+        dataToSend.source=0xaa;
+        dataToSend.actuation_data=actual_msg;
+        xQueueSend(LCDQueue, &dataToSend, pdMS_TO_TICKS(0));
+        xTaskNotify(MotorTaskHandle,actual_msg, eSetValueWithoutOverwrite);
         //send the data to the motor actuator queue
         switch(ctrl_msg & 0xff00)
         {
