@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "ioctl.h": "c",
+        "spidev.h": "c",
+        "types.h": "c",
+        "gpio.h": "c",
+        "maintask.h": "c",
+        "spitask.h": "c",
+        "genericincludes.h": "c",
+        "decisiontask.h": "c",
+        "pthread.h": "c"
+    }
+}
