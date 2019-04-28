@@ -32,7 +32,7 @@ extern TaskHandle_t FanTaskHandle;
 extern TaskHandle_t MotorTaskHandle;
 
 
-int prev_state;
+int prev_state = 0;
 
 void spi_init(uint32_t mode, uint32_t clk_speed)
 {
@@ -67,9 +67,9 @@ void InterBoardSPI(void *pvParameters)
 {
 //    UARTprintf("SPI task\n");
 //    SPI testing
-    uint16_t received_data;
-    uint16_t control_message;
-    IBStruct rec_msg;
+//    uint16_t received_data;
+//    uint16_t control_message;
+//    IBStruct rec_msg;
     prev_state = 0;
 
     //Initialize the queue
@@ -80,33 +80,33 @@ void InterBoardSPI(void *pvParameters)
     spi_data_write(0x0011, 1);
     while(1)
     {
-//        test_function();
-//      Wait till the message is received from queue
-        xQueueReceive(IBQueue, &rec_msg, portMAX_DELAY);
-//      Increase priority of task
-//        vTaskPrioritySet(IBTaskHandle, 2);
-//      structure packet of values to send
-        packet = ((uint16_t)++trid<<8) | rec_msg.source;
-        UARTprintf("source - packet - data is %x - %x - %x\n",rec_msg.source,packet,rec_msg.data);
-//      Send the packet the beagle bone black
-        spi_data_write(packet, 1);
-        received_data = spi_data_read();
-        UARTprintf("RX 1 - %x\n\r",received_data);
-
-//      Send the data to beagle bone black
-        spi_data_write(rec_msg.data, 1);
-        received_data = spi_data_read();
-        UARTprintf("RX 2 - %x\n\r",received_data);
-        spi_data_write(packet, 1);
-
-//      wait till valid control message is received from beagle bone green
-        control_message = spi_data_read();
-        UARTprintf("Control Message - %x\n\r",control_message);
-
-        decode_message(control_message);
-//      send the message using queue to corresponding actuator.
-//      Restore priority of task to original
-//        vTaskPrioritySet(IBTaskHandle, 1);
+        test_function();
+////      Wait till the message is received from queue
+//        xQueueReceive(IBQueue, &rec_msg, portMAX_DELAY);
+////      Increase priority of task
+////        vTaskPrioritySet(IBTaskHandle, 2);
+////      structure packet of values to send
+//        packet = ((uint16_t)++trid<<8) | rec_msg.source;
+//        UARTprintf("source - packet - data is %x - %x - %x\n",rec_msg.source,packet,rec_msg.data);
+////      Send the packet the beagle bone black
+//        spi_data_write(packet, 1);
+//        received_data = spi_data_read();
+//        UARTprintf("RX 1 - %x\n\r",received_data);
+//
+////      Send the data to beagle bone black
+//        spi_data_write(rec_msg.data, 1);
+//        received_data = spi_data_read();
+//        UARTprintf("RX 2 - %x\n\r",received_data);
+//        spi_data_write(packet, 1);
+//
+////      wait till valid control message is received from beagle bone green
+//        control_message = spi_data_read();
+//        UARTprintf("Control Message - %x\n\r",control_message);
+//
+//        decode_message(control_message);
+////      send the message using queue to corresponding actuator.
+////      Restore priority of task to original
+////        vTaskPrioritySet(IBTaskHandle, 1);
     }
 }
 
@@ -114,39 +114,22 @@ void decode_message(uint16_t ctrl_msg)
 {
     LCDStruct dataToSend;
     uint8_t actual_msg= (ctrl_msg >> 8);
-    if(ctrl_msg & 0x00ff == 0x0055)
+    dataToSend.task = 2;
+    if((ctrl_msg & 0xff) == 0x55)
     {
         dataToSend.source=0x55;
         dataToSend.actuation_data=actual_msg;
         xQueueSend(LCDQueue, &dataToSend, pdMS_TO_TICKS(0));
         xTaskNotify(FanTaskHandle,actual_msg, eSetValueWithoutOverwrite);
         //Send the data to the fan actuator queue
-        switch(ctrl_msg & 0xff00)
-        {
-        case 0x0000:
-//            send message to fan queue to turn off
-            break;
-        case 0x0100:
-//            send message to fan queue to turn on
-            break;
-        }
     }
-    else if(ctrl_msg & 0x00ff == 0x00AA)
+    else if((ctrl_msg & 0xff) == 0xaa)
     {
         dataToSend.source=0xaa;
         dataToSend.actuation_data=actual_msg;
         xQueueSend(LCDQueue, &dataToSend, pdMS_TO_TICKS(0));
         xTaskNotify(MotorTaskHandle,actual_msg, eSetValueWithoutOverwrite);
         //send the data to the motor actuator queue
-        switch(ctrl_msg & 0xff00)
-        {
-        case 0x0000:
-//            send message to motor queue to turn off
-            break;
-        case 0x0100:
-//            send message to motor queue to turn on
-            break;
-        }
     }
 }
 
@@ -155,8 +138,8 @@ void test_function()
 {
     uint32_t buffer;
     IBStruct rec_msg;
-    uint16_t received_data;
-    uint16_t control_message;
+//    uint16_t received_data;
+//    uint16_t control_message;
     int bytes_rec;
     static uint8_t state = STATE_SEND_TRID;
 
@@ -167,7 +150,7 @@ void test_function()
         xQueueReceive(IBQueue, &rec_msg, portMAX_DELAY);
         packet = ((uint16_t)++trid<<8) | rec_msg.source;
         UARTprintf("source - packet - data is %x - %x - %x\n",rec_msg.source,packet,rec_msg.data);
-        if(prev_state == state)
+        if(prev_state != state)
         {
             spi_data_write((uint16_t)packet, 1);
             prev_state = 1;
@@ -178,36 +161,179 @@ void test_function()
         {
             state = STATE_SEND_DATA;
         }
-        else if(bytes_rec != 0 && buffer == 0x02)
+        else if(buffer == 0x02)
         {
-            UARTprintf("Get data again for sync\n");
+            state = STATE_SEND_DATA;
         }
         else
         {
             UARTprintf("Bhai khud dekh lena control\n");
+            self_control(rec_msg);
         }
         break;
     case STATE_SEND_DATA:
         UARTprintf("In state 2\n");
-        if(prev_state == state)
+        if(prev_state != state)
         {
             spi_data_write(rec_msg.data, 1);
             prev_state = 2;
         }
         bytes_rec = SSIDataGetNonBlocking(SSI2_BASE, &buffer);
+//        SSIDataGet(SSI2_BASE, &buffer);
         UARTprintf("RX 2 - %x\n\r",buffer);
         if(buffer == 0x02 && bytes_rec != 0)
         {
             state = STATE_GET_CTRL;
             spi_data_write(packet, 1);
         }
+        else if(buffer == 0x01)
+        {
+            state = STATE_SEND_TRID;
+        }
+        else if(buffer == 0x02)
+        {
+            state = STATE_GET_CTRL;
+        }
+        else if(buffer != 0x01 || buffer != 0x02)
+        {
+            state = STATE_GET_CTRL;
+        }
         break;
     case STATE_GET_CTRL:
         UARTprintf("In state 3\n");
         bytes_rec = SSIDataGetNonBlocking(SSI2_BASE, &buffer);
-        UARTprintf("Control Message - %x\n\r",buffer);
+//        SSIDataGet(SSI2_BASE, &buffer);
         state = STATE_SEND_TRID;
         prev_state = 3;
+        if(buffer == 0x01 || buffer == 0x02)
+        {
+            break;
+        }
+        UARTprintf("Control Message - %x\n\r",buffer);
+        decode_message(buffer);
+        //Send control message
         break;
     }
+}
+
+
+test_function1()
+{
+    uint32_t buffer;
+    IBStruct rec_msg;
+//    uint16_t received_data;
+//    uint16_t control_message;
+    int bytes_rec;
+    static uint8_t state = STATE_SEND_TRID;
+
+    switch(state)
+    {
+    case STATE_SEND_TRID:
+        UARTprintf("In state 1\n");
+        xQueueReceive(IBQueue, &rec_msg, portMAX_DELAY);
+        packet = ((uint16_t)++trid<<8) | rec_msg.source;
+        UARTprintf("source - packet - data is %x - %x - %x\n",rec_msg.source,packet,rec_msg.data);
+        if(prev_state != state)
+        {
+            spi_data_write((uint16_t)packet, 1);
+            prev_state = 1;
+        }
+        bytes_rec = SSIDataGetNonBlocking(SSI2_BASE, &buffer);
+        UARTprintf("RX 1 - %x\n\r",buffer);
+        if(bytes_rec != 0 && buffer == 0x01)
+        {
+            state = STATE_SEND_DATA;
+        }
+        else if(buffer == 0x02)
+        {
+            state = STATE_SEND_TRID;
+        }
+        else if(buffer != 0x01 | buffer != 0x02)
+        {
+            state = STATE_SEND_TRID;
+        }
+        else
+        {
+            UARTprintf("Bhai khud dekh lena control\n");
+            self_control(rec_msg);
+        }
+        break;
+    case STATE_SEND_DATA:
+        UARTprintf("In state 2\n");
+        if(prev_state != state)
+        {
+            spi_data_write(rec_msg.data, 1);
+            prev_state = 2;
+        }
+        bytes_rec = SSIDataGetNonBlocking(SSI2_BASE, &buffer);
+//        SSIDataGet(SSI2_BASE, &buffer);
+        UARTprintf("RX 2 - %x\n\r",buffer);
+        if(buffer == 0x02 && bytes_rec != 0)
+        {
+            state = STATE_GET_CTRL;
+            spi_data_write(packet, 1);
+        }
+        else if(buffer == 0x01)
+        {
+            state = STATE_SEND_TRID;
+        }
+        else if(buffer == 0x02)
+        {
+            state = STATE_GET_CTRL;
+        }
+        else if(buffer != 0x01 || buffer != 0x02)
+        {
+            state = STATE_GET_CTRL;
+        }
+        break;
+    case STATE_GET_CTRL:
+        UARTprintf("In state 3\n");
+        bytes_rec = SSIDataGetNonBlocking(SSI2_BASE, &buffer);
+//        SSIDataGet(SSI2_BASE, &buffer);
+        state = STATE_SEND_TRID;
+        prev_state = 3;
+        if(buffer == 0x01 || buffer == 0x02)
+        {
+            break;
+        }
+        UARTprintf("Control Message - %x\n\r",buffer);
+        decode_message(buffer);
+        //Send control message
+        break;
+    }
+}
+
+
+void self_control(IBStruct rec_msg)
+{
+    uint16_t control_msg_to_send;
+    uint8_t source;
+    uint16_t data;
+
+    source = rec_msg.source;
+    data   = rec_msg.data;
+    switch(source)
+    {
+    case 0x55:
+        if((data*0.25) > 30)
+        {
+            control_msg_to_send = 0x0100 | source;
+        }
+        else
+        {
+            control_msg_to_send = 0x0000 | source;
+        }
+        break;
+    case 0xAA:
+        if(data > 0x1aa)
+        {
+            control_msg_to_send = 0x0000 | source;
+        }
+        else
+        {
+            control_msg_to_send = 0x0100 | source;
+        }
+        break;
+    }
+    decode_message(control_msg_to_send);
 }

@@ -71,4 +71,6 @@ void InterBoardSPI(void *pvParameters);
  */
 void decode_message(uint16_t ctrl_msg);
 void test_function();
+
+void self_control(IBStruct rec_msg);
 #endif /* SRC_SPI_H_ */

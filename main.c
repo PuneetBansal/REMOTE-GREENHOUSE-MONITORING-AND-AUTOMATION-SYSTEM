@@ -24,6 +24,7 @@
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
+#include "pwm.h"
 
 #include "src/spi.h"
 #include "src/LCDdriver.h"
@@ -72,12 +73,12 @@ int main(void)
     UARTprintf("Creating tasks\n");
 
     // Creating all the required task
-//    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, &TempTaskHandle);
-//    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, &SMTaskHandle);
-//    xTaskCreate(InterBoardSPI, "InterBoardCom", 256, NULL, 1, &IBTaskHandle);
-//    xTaskCreate(LCDTask, "LCDTask", 256, NULL, 1, &LCDTaskHandle);
-//    xTaskCreate(MotorTask, "MotorTask", 256, NULL, 1, &MotorTaskHandle);
-//    xTaskCreate(FanTask, "FanTask", 256, NULL, 1, &FanTaskHandle);
+    xTaskCreate(TemperatureTask, "Temperature", 256, NULL, 1, &TempTaskHandle);
+    xTaskCreate(SoilMoistureTask, "Moisture", 256, NULL, 1, &SMTaskHandle);
+    xTaskCreate(InterBoardSPI, "InterBoardCom", 256, NULL, 1, &IBTaskHandle);
+    xTaskCreate(LCDTask, "LCDTask", 256, NULL, 1, &LCDTaskHandle);
+    xTaskCreate(MotorTask, "MotorTask", 256, NULL, 1, &MotorTaskHandle);
+    xTaskCreate(FanTask, "FanTask", 256, NULL, 1, &FanTaskHandle);
 
 
     vTaskStartScheduler();
@@ -134,32 +135,35 @@ int main(void)
 
 
 //    LCD testing
-    lcd_init();
-    lcd_on();
-    lcd_write_string("Temp  : 23.576");
-    lcd_pos(1, 0);
-    lcd_write_string("Mois  : 56%");
-    lcd_pos(2, 0);
-    lcd_write_string("Fspeed: 10%");
-    lcd_pos(3, 0);
-    lcd_write_string("Motor : ON");
-    lcd_print_float(23.56);
+//    lcd_init();
+//    lcd_on();
+//    lcd_write_string("Temp  : 23.576");
+//    lcd_pos(1, 0);
+//    lcd_write_string("Mois  : 56%");
+//    lcd_pos(2, 0);
+//    lcd_write_string("Fspeed: 10%");
+//    lcd_pos(3, 0);
+//    lcd_write_string("Motor : ON");
+//    lcd_print_float(23.56);
 
 //    PWM test
 //    motor_control_init();
 //    motor_control_config(500, 25);
+//    while(1)
+//    {
+//
+//    }
 
 //  Temperature Sensor testing
 //    char tempbuffer[10];
 //    uint16_t buffer;
 //    uint32_t i;
 //    float temp;
-//    spi_init(MASTER, 100000);
+//    temp_sens_init(MASTER, 100000);
 //    while(1)
 //    {
-//        spi_data_write(0x1234,1);
-//        buffer = spi_data_read();
-//        temp = temperature(buffer);
+//        buffer = temp_data_get();
+//        temp = temperature_in_c(buffer);
 //        UARTprintf("D2 is %d\n",((buffer>>2) && 0x01));
 //        sprintf(tempbuffer,"%f",temp);
 //        UARTprintf("Temperature is %s\n",tempbuffer);
@@ -169,17 +173,24 @@ int main(void)
 //        for(i=0; i<1000000; i++);
 //        for(i=0; i<1000000; i++);
 //    }
-    return 0;
+//    return 0;
 }
 
 void motor_control_init()
 {
+//    SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
+//    SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
+//    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+//    GPIOPinConfigure(GPIO_PF1_M0PWM1);
+//    GPIOPinTypePWM(GPIO_PORTF_BASE, GPIO_PIN_1);
+//    PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
+
     SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    GPIOPinConfigure(GPIO_PF1_M0PWM1);
-    GPIOPinTypePWM(GPIO_PORTF_BASE, GPIO_PIN_1);
-    PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
+    GPIOPinConfigure(GPIO_PG0_M0PWM4);
+    GPIOPinTypePWM(GPIO_PORTG_BASE, GPIO_PIN_0);
+    PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
 }
 
 
@@ -189,11 +200,13 @@ void motor_control_config(uint32_t period_in_khz, uint8_t duty_cycle)
     uint64_t N;
     uint32_t width;
     N = 120000/period_in_khz;
-    PWMGenPeriodSet(PWM0_BASE, PWM_GEN_0, N);
+//    PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, N);
+    PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, 64000);
     width = duty_cycle / 100;
-    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, PWMGenPeriodGet(PWM0_BASE, PWM_GEN_0) * width);
-    PWMOutputState(PWM0_BASE, PWM_OUT_0_BIT, true);
-    PWMGenEnable(PWM0_BASE, PWM_GEN_0);
+//    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, PWMGenPeriodGet(PWM0_BASE, PWM_GEN_2) * width);
+    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, PWMGenPeriodGet(PWM0_BASE, PWM_GEN_2) / 70000);
+    PWMOutputState(PWM0_BASE, PWM_OUT_2_BIT, true);
+    PWMGenEnable(PWM0_BASE, PWM_GEN_2);
 }
 
 

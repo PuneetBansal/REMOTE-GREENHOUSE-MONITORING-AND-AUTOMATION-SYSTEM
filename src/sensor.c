@@ -67,20 +67,31 @@ uint32_t moisture_data()
 
 void temp_sens_init(uint32_t mode, uint32_t clk_speed)
 {
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI3);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOF));
+//    SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI3);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI1);
+//    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOE));
 
     /* Configure the GPIO pins for using it as SPI */
-    GPIOPinConfigure(GPIO_PF0_SSI3XDAT1);
-    GPIOPinConfigure(GPIO_PF1_SSI3XDAT0);
-    GPIOPinConfigure(GPIO_PF2_SSI3FSS);
-    GPIOPinConfigure(GPIO_PF3_SSI3CLK);
+//    GPIOPinConfigure(GPIO_PF0_SSI3XDAT1);
+//    GPIOPinConfigure(GPIO_PF1_SSI3XDAT0);
+//    GPIOPinConfigure(GPIO_PF2_SSI3FSS);
+//    GPIOPinConfigure(GPIO_PF3_SSI3CLK);
+    GPIOPinConfigure(GPIO_PE5_SSI1XDAT1);
+    GPIOPinConfigure(GPIO_PE4_SSI1XDAT0);
+    GPIOPinConfigure(GPIO_PB4_SSI1FSS);
+    GPIOPinConfigure(GPIO_PB5_SSI1CLK);
 
-    GPIOPinTypeSSI(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
+//    GPIOPinTypeSSI(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
+    GPIOPinTypeSSI(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+    GPIOPinTypeSSI(GPIO_PORTE_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 
-    SSIConfigSetExpClk(SSI3_BASE, g_ui32SysClock, SSI_FRF_MOTO_MODE_0, mode, clk_speed, 16);
-    SSIEnable(SSI3_BASE);
+//    SSIConfigSetExpClk(SSI3_BASE, g_ui32SysClock, SSI_FRF_MOTO_MODE_0, mode, clk_speed, 16);
+    SSIConfigSetExpClk(SSI1_BASE, g_ui32SysClock, SSI_FRF_MOTO_MODE_0, mode, clk_speed, 16);
+//    SSIEnable(SSI3_BASE);
+    SSIEnable(SSI1_BASE);
 }
 
 
@@ -89,8 +100,8 @@ uint16_t temp_data_get()
     uint32_t buffer;
     /* junk value to start the SPI transaction */
     uint16_t junk_val = 0x1234;
-    SSIDataPut(SSI3_BASE, junk_val);
-    SSIDataGet(SSI3_BASE, &buffer);
+    SSIDataPut(SSI1_BASE, junk_val);
+    SSIDataGet(SSI1_BASE, &buffer);
     return (uint16_t)buffer;
 }
 
@@ -102,6 +113,7 @@ void TemperatureTask(void *pvParameters)
 
     dataToSendToIB.source = TEMP_SOURCE_ID;
     dataToSendToLCD.source = TEMP_SOURCE_ID;
+    dataToSendToLCD.task = SENS_TASK_ID;
 
     /* Initialize the temperature sensor */
     temp_sens_init(MASTER, TEMP_SPI_CLK);
@@ -110,11 +122,11 @@ void TemperatureTask(void *pvParameters)
     temp_data = temp_data_get()>>3;
     if(temp_data == 0)
     {
-        UARTprintf("Temp sen BIST failed\n");
+        UARTprintf("Temperature sensor BIST failed\n");
     }
 
     /* Initialize the timer for periodic measurements */
-    TimerHandle_t TakeTempReadings = xTimerCreate("TakeTemperature", pdMS_TO_TICKS(2000), pdTRUE, (void*)0, TemperatureCallback);
+    TimerHandle_t TakeTempReadings = xTimerCreate("TakeTemperature", pdMS_TO_TICKS(200), pdTRUE, (void*)0, TemperatureCallback);
     /* Start the timer after 100ms */
     BaseType_t return_val = xTimerStart(TakeTempReadings, pdMS_TO_TICKS(0));
     while(1)
@@ -125,6 +137,7 @@ void TemperatureTask(void *pvParameters)
 
         /* Take the reading from the sensor */
 //        data_to_send.data = temp_data_get()>>3;
+
         dataToSendToIB.data = temp_data;
         dataToSendToLCD.sensing_data = temp_data;
 
@@ -168,13 +181,14 @@ void SoilMoistureTask(void *pvParameters)
 
     data_to_send.source = SM_SOURCE_ID;
     dataTOSendTOLCD.source = SM_SOURCE_ID;
+    dataTOSendTOLCD.task = SENS_TASK_ID;
 
     /* Initialize the soil moisture sensor ADC. */
     moisture_sensor_init();
     // Initialize the timer for periodic measurements */
-    TimerHandle_t TakeSoilReadings = xTimerCreate("TakeSoilMoisture", pdMS_TO_TICKS(2000), pdTRUE, (void*)0, MoistureCallback);
+    TimerHandle_t TakeSoilReadings = xTimerCreate("TakeSoilMoisture", pdMS_TO_TICKS(200), pdTRUE, (void*)0, MoistureCallback);
     /*  Start the timer after 100ms */
-    BaseType_t return_val = xTimerStart(TakeSoilReadings, pdMS_TO_TICKS(100));
+    BaseType_t return_val = xTimerStart(TakeSoilReadings, pdMS_TO_TICKS(10));
     if(return_val != pdPASS)
     {
         UARTprintf("Moisture timer failed\n");
@@ -199,7 +213,7 @@ void SoilMoistureTask(void *pvParameters)
 void MoistureCallback(TimerHandle_t xtimer)
 {
     /* Notify the task to take the readings */
-    if(SMTaskHandle != NULL)
+//    if(SMTaskHandle != NULL)
     {
         xTaskNotify(SMTaskHandle, 1, eSetBits);
     }

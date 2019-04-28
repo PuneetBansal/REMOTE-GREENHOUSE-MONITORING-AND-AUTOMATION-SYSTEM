@@ -13,6 +13,7 @@
 #define TEMP_CONV_FACTOR 0.25
 #define SM_SOURCE_ID     0xAA
 #define SEQUENCE_NO      3
+#define SENS_TASK_ID     1
 /*
  * Function name: moisture_sensor_init()
  * Description  : This function initializes ADC to get the analog voltage from soil moisture

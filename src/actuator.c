@@ -37,9 +37,18 @@ void LCDTask(void *pvParameters)
     UARTprintf("Entered LCD Task");
     LCDStruct dataReceived;
     lcd_init();
+    lcd_on();
+    lcd_pos(0, 0);
+    lcd_write_string("Temp");
+    lcd_pos(0, 8);
+    lcd_write_string("Moist");
+    lcd_pos(2, 0);
+    lcd_write_string("Fan");
+    lcd_pos(2, 8);
+    lcd_write_string("Motor");
     LCDQueue=xQueueCreate(10, sizeof(LCDStruct));
     float val=0;
-    uint8_t actData=0;
+//    uint8_t actData=0;
 
 while(1)
 {
@@ -48,29 +57,44 @@ while(1)
         switch(dataReceived.source)
         {
         case 0x55:
-            lcd_pos(0, 1);
-            val=dataReceived.sensing_data*0.25;
-            lcd_print_float(val);
-
-            lcd_pos(2, 1);
-            lcd_print_digit(dataReceived.actuation_data);
-            UARTprintf("Temperature values\n");
+            if(dataReceived.task == 1)
+            {
+                lcd_pos(1, 0);
+                val=dataReceived.sensing_data*0.25;
+                lcd_print_float(val);
+            }
+            else
+            {
+                lcd_pos(3, 0);
+                lcd_write_string("        ");
+                lcd_pos(3, 0);
+                lcd_print_digit((long)dataReceived.actuation_data);
+                UARTprintf("Temperature values\n");
+            }
             break;
         case 0xaa:
-            lcd_pos(0, 8);
-            val=dataReceived.sensing_data;
-            lcd_print_float(val);
-
-            lcd_pos(2, 8);
-            lcd_print_digit(dataReceived.actuation_data);
-            UARTprintf("Soil Moisture Values\n");
-            break;
+            if(dataReceived.task == 1)
+            {
+                lcd_pos(1, 8);
+                lcd_write_string("        ");
+                val=dataReceived.sensing_data;
+                lcd_pos(1, 8);
+                lcd_print_float(val);
+            }
+            else
+            {
+                lcd_pos(3, 8);
+                lcd_write_string("        ");
+                lcd_pos(3, 8);
+                lcd_print_digit(dataReceived.actuation_data);
+                UARTprintf("Soil Moisture Values\n");
+                break;
+            }
          }
-
     }
     else
     {
-        UARTprintf("Reading from LCD queue failed\n");
+//        UARTprintf("Reading from LCD queue failed\n");
     }
 }
 
@@ -80,6 +104,8 @@ void FanTask(void *pvParameters)
 {
     UARTprintf("Entered Fan Task");
     uint32_t notificationVal;
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPION);
+    GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_0);
 
     while(1)
     {
@@ -87,34 +113,73 @@ void FanTask(void *pvParameters)
         switch(notificationVal)
         {
         case 0: UARTprintf("Turn off the fan");
+        GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_0, 0);
         break;
 
         case 1: UARTprintf("Turn on the fan");
+        GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_0, GPIO_PIN_0);
         break;
         }
     }
 
 }
+
+int duty_cycle;
 
 void MotorTask(void *pvParameters)
 {
-    UARTprintf("Entered Motor Task");
+//    UARTprintf("Entered Motor Task");
     uint32_t notificationVal;
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
+//    GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, GPIO_PIN_0);
 
+    GPIOPadConfigSet(GPIO_PORTG_BASE, GPIO_PIN_0, GPIO_STRENGTH_4MA, GPIO_PIN_TYPE_STD);
+    GPIODirModeSet(GPIO_PORTG_BASE, GPIO_PIN_0, GPIO_DIR_MODE_OUT);
+
+    /* Initialize the timer for periodic measurements */
+    TimerHandle_t MotorTimer = xTimerCreate("Motor", pdMS_TO_TICKS(1), pdTRUE, (void*)0, MotorCallback);
+
+    /* Start the timer after 100ms */
+    BaseType_t return_val = xTimerStart(MotorTimer, pdMS_TO_TICKS(0));
+
+    duty_cycle = 1;
     while(1)
     {
-        xTaskNotifyWait(0x00, 0xffffffff , &notificationVal , portMAX_DELAY);
-        switch(notificationVal)
-        {
-        case 0: UARTprintf("Turn off the motor");
-        break;
+//        xTaskNotifyWait(0x00, 0xffffffff , &notificationVal , portMAX_DELAY);
+//        switch(notificationVal)
+//        {
+//        case 0: UARTprintf("Turn off the motor");
+//        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, 0);
+//        break;
+//
+//        case 1: UARTprintf("Turn on the motor");
+//        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, GPIO_PIN_0);
+//        break;
+//        }
+//        duty_cycle = 1;
 
-        case 1: UARTprintf("Turn on the motor");
-        break;
-        }
+//        }
     }
 }
 
+void MotorCallback(TimerHandle_t xtimer)
+{
+    static int x = 0;
+    if(x <= duty_cycle)
+    {
+        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, 0);
+        x ++;
+    }
+    else
+    {
+        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, GPIO_PIN_0);
+        x ++;
+    }
+    if(x == 10)
+    {
+        x = 0;
+    }
+}
 
 
 
