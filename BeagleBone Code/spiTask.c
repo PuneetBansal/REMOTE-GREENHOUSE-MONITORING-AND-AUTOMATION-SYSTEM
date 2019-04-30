@@ -211,8 +211,11 @@ while(1)
 			rx1=0;
 
 			spi_transfer(spi_fd, &tx1, &rx1, 2); 
-	
-            dataToSend.source=present_source;
+
+			
+dataToSend.source=present_source;
+			
+            
 			dataToSend.data=(rx1*0.25);		
           
 			dataToSendToLog.source = present_source;

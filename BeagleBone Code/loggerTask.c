@@ -120,6 +120,8 @@ void logToFile(char *fileName, logStruct dataToReceive)
   
     if(dataToReceive.remoteStatus==none_state)
     {
+    if(dataToReceive.source ==0x55 || dataToReceive.source ==0xaa)
+    {
     if(count ==1)
     {
         logging = fopen(fileName,"w");
@@ -129,9 +131,10 @@ void logToFile(char *fileName, logStruct dataToReceive)
     {
         logging = fopen(fileName,"a");
     }
-       
+   
     fprintf(logging,"%s %s [%s] %s %d \n",printTimeStamp(),level,source,type,dataToReceive.data); 
     fclose(logging);
+    }
     }
     else /*if(dataToReceive.remoteStatus== degraded || dataToReceive.remoteStatus ==notActive || dataToReceive.remoteStatus ==active)   */ 
     {
