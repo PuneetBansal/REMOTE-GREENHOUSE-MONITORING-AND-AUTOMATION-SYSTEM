@@ -135,6 +135,7 @@ int c=0;
 prev_trid=DEFAULT_TRID;
 while(1)
 {
+	dataToSendToLog.logLevel=none_state;
     int k;
 	if(connection_handler)
 	{
@@ -150,7 +151,7 @@ while(1)
 				printf("Data sending from spitask to logTask failed 1");
 		}
 	}
-	else if(degradedState)
+	else if(degradedState==1)
 	{
 						
 		degradedState=0;
@@ -164,10 +165,21 @@ while(1)
 			printf("Data sending from spitask to logTask failed 2");
 		}
 	}
-	else
-	{			
-		dataToSendToLog.logLevel=none_state;
+	else if(revived==1)
+	{
+		revived=0;
+		dataToSendToLog.logLevel=alert;
+		dataToSendToLog.remoteStatus=active;
+		if(mq_send(logQueue,(char*)&dataToSendToLog,sizeof(logStruct),0)!=0)
+		{
+			printf("Data sending from spitask to logTask failed 2");
+		}
 	}
+	// else
+	// {			
+	// 	dataToSendToLog.logLevel=none_state;
+	// }
+	dataToSendToLog.logLevel=none_state;
 	
 	/*Polling the remote node*/
     if(spi_handler==1)
@@ -201,7 +213,8 @@ while(1)
 			spi_transfer(spi_fd, &tx1, &rx1, 2); 
 	
             dataToSend.source=present_source;
-            dataToSend.data=rx1;
+			dataToSend.data=(rx1*0.25);		
+          
 			dataToSendToLog.source = present_source;
 			dataToSendToLog.data = rx1;
 
@@ -222,6 +235,7 @@ while(1)
             	}
 				
 			}
+			dataToSendToLog.remoteStatus=none_state;
 			if(mq_send(logQueue,(char*)&dataToSendToLog,sizeof(logStruct),0)!=0)
 			{
 				printf("Data sending from spitask to logTask failed");
@@ -372,10 +386,19 @@ void checkDegradedState(uint8_t source)
 		degradedState=1;
 		temp=0;
 		soilMoisture=0;
+		notDegraded=0;
 	}
-	else
+	else if(abs(temp-soilMoisture)<10)
 	{
-		degradedState=0;
+		notDegraded++;
+		if(notDegraded>20)
+		{
+		printf("------------------------------------>ACTIVE<-------------------------------------- \n");
+		revived=1;
+		gpio_write_value(56,0);
+		notDegraded=0;
+		}
+		
 	}
 	
 

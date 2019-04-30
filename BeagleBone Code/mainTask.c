@@ -23,6 +23,8 @@ int main(int argc, char *argv[])
     printOnlyOnce=0;
     connection_handler =0;
     exitThread=false;
+    notDegraded=0;
+    revived=0;
     gpio_init(55,1);
     gpio_init(56,1);
     gpio_write_value(55,0);

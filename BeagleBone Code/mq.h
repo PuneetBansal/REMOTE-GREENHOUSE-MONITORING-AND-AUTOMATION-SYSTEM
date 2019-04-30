@@ -13,7 +13,7 @@
 /* Message queues for all the tasks */
 #define SPIQUEUENAME "/spiqueue1"
 #define DECISIONQUEUENAME "/decisionqueue1"
-#define LOGQUEUENAME "/logqueuequeue10"
+#define LOGQUEUENAME "/logqueuequeue11"
 
 /* Message queue size for all the tasks */
 #define SPI_QUEUE_SIZE	10

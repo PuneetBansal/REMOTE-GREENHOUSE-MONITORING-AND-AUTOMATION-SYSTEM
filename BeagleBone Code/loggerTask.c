@@ -133,7 +133,7 @@ void logToFile(char *fileName, logStruct dataToReceive)
     fprintf(logging,"%s %s [%s] %s %d \n",printTimeStamp(),level,source,type,dataToReceive.data); 
     fclose(logging);
     }
-    else if(dataToReceive.remoteStatus== degraded || dataToReceive.remoteStatus ==notActive || dataToReceive.remoteStatus ==active)    
+    else /*if(dataToReceive.remoteStatus== degraded || dataToReceive.remoteStatus ==notActive || dataToReceive.remoteStatus ==active)   */ 
     {
 
     if(count ==1)

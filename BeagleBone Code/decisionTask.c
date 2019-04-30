@@ -24,6 +24,7 @@ mqd_t logQueue = mqueue_init(LOGQUEUENAME, LOG_QUEUE_SIZE, sizeof(logStruct));
 
 dataToSendToLog.logLevel = info;
 dataToSendToLog.type = actuation;
+dataToSendToLog.remoteStatus=none_state;
 
 if(decisionQueue < 0)
 {
@@ -63,6 +64,7 @@ else
          dataToSend.sourceAndCommand |= dataReceived.source;
          
          dataToSendToLog.data =0x01;
+         dataToSendToLog.remoteStatus=none_state;
         }
         else
         {
@@ -70,6 +72,7 @@ else
          dataToSend.sourceAndCommand <<= 8;
          dataToSend.sourceAndCommand |= dataReceived.source;
          dataToSendToLog.data =0x00;
+         dataToSendToLog.remoteStatus=none_state;
         }
         int ret=mq_send(spiQueue, (char*)&dataToSend,sizeof(spiStruct),0);
         if(ret<0)
@@ -92,6 +95,7 @@ else
         dataToSend.sourceAndCommand <<= 8;
         dataToSend.sourceAndCommand |= dataReceived.source;
         dataToSendToLog.data =command;
+        dataToSendToLog.remoteStatus=none_state;
 
         printf("Command message is %x\n",dataToSend.sourceAndCommand);
         int ret=mq_send(spiQueue, (char*)&dataToSend,sizeof(spiStruct),0);

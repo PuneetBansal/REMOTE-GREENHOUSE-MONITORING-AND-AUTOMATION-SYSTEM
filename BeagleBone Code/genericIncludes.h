@@ -26,5 +26,7 @@ uint8_t connection_handler;
 uint8_t recoveryIndiacation;
 uint8_t printOnlyOnce;
 bool exitThread;
+uint8_t notDegraded;
+uint8_t revived;
 
 /***********************************************************************************************/
