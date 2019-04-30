@@ -9,7 +9,7 @@
 #include "mainTask.h"
 
 pthread_t spiTask,decisionTask,loggerTask;
-
+extern void signal_handler(int , siginfo_t * , void* );
 char *logFileName;
 uint8_t count;
 
@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
     recoveryIndiacation=0;
     printOnlyOnce=0;
     connection_handler =0;
+    exitThread=false;
     gpio_init(55,1);
     gpio_init(56,1);
     gpio_write_value(55,0);
@@ -51,7 +52,12 @@ int main(int argc, char *argv[])
     }
     while(1)
     {
+        if(exitThread)
+	    {
+		    break;
+    	}
     }
+    
     pthread_join(spiTask,NULL);
     pthread_join(decisionTask,NULL);
     pthread_join(loggerTask,NULL);

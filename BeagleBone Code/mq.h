@@ -1,3 +1,11 @@
+
+/************************************************************************************************
+* File name   : mq.h                                                                            *
+* Authors     : Nachiket Kelkar and Puneet Bansal                                               *
+* Description : Function definitions of wrapper made to initialise queue                        *
+* Tools used  : GNU make, gcc, arm-linux-gnueabihf-gcc                                          *
+************************************************************************************************/
+
 #include <mqueue.h>
 #include <stdbool.h>
 #include <stdint.h>

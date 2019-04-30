@@ -1,7 +1,15 @@
+/************************************************************************************************
+* File name   : loggerTask.c                                                                    *
+* Authors     : Puneet Bansal and  Nachiket Kelkar                                              *
+* Description : Functions to configure logging to a file                                        *
+* Tools used  : GNU make, gcc, arm-linux-gnueabihf-gcc        									*
+************************************************************************************************/
+
 #include "genericIncludes.h"
 #include "loggerTask.h"
 
 extern uint8_t count;
+extern void signal_handler(int , siginfo_t * , void* );
 
 void *loggerTaskRoutine(void *fileName)
 {
@@ -24,16 +32,26 @@ while(1)
         logToFile(fileName,dataReceived);
 
     }   
+    if(exitThread)
+	{
+			break;
+	}
+}
+mq_close(decisionQueue);
+mq_close(spiQueue);
+mq_close(logQueue);
+mq_unlink(DECISIONQUEUENAME);
+mq_unlink(SPIQUEUENAME);
+mq_unlink(LOGQUEUENAME);
+pthread_exit(NULL);
 }
 
-}
 char* printTimeStamp()
 {
     char* time_stamp=malloc(40);
     struct timespec thTimeSpec;
     clock_gettime(CLOCK_REALTIME, &thTimeSpec);
     sprintf(time_stamp,"[s: %ld, ns: %ld]",thTimeSpec.tv_sec,thTimeSpec.tv_nsec);
-    //printf("Value of time_stamp is %s",time_stamp);
     return time_stamp;
 }
 
@@ -41,15 +59,11 @@ char* printTimeStamp()
 void logToFile(char *fileName, logStruct dataToReceive)
 {
    
-    //printf("value of count is %d",count);
     FILE *logging;
     char level[20];
     char source[20];
     char type[20];
     char remoteNodeStatus[30];
-    //char actuation[50];
-    //char state[20];
-    
 
     if(dataToReceive.logLevel==alert)
     {

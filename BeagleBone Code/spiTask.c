@@ -1,3 +1,11 @@
+/************************************************************************************************
+* File name   : spitask.c                                                                       *
+* Authors     : Puneet Bansal and  Nachiket Kelkar                                              *
+* Description : Functions to configure spi, send and receive values to the remote node via SPI  *
+* Tools used  : GNU make, gcc, arm-linux-gnueabihf-gcc        									*
+* References  : https://raw.githubusercontent.com/torvalds/linux/master/tools/spi/spidev_test.c *
+************************************************************************************************/
+
 #include "genericIncludes.h"
 #include "spiTask.h"
 #include "mq.h"
@@ -13,7 +21,7 @@ uint16_t rx1;
 uint16_t tx;
 uint16_t rx;
 
-static void signal_handler(int , siginfo_t * , void* );
+void signal_handler(int , siginfo_t * , void* );
 
 void *spiTaskRoutine(void *dataObj)
 {
@@ -28,12 +36,7 @@ logStruct dataToSendToLog;
 
 spi_fd=spi_init();
 
-// int retval=myTimerCreate(0,2,0);
-// if(retval!=0)
-// {
-//      printf("Timer creation for SPI failed\n");
-// }
-/********************************************************************************/
+/***************Configuring the timer to poll remote node every 2 second****************/
 struct sigevent spiEvent;
 struct sigaction spiAction;
 struct itimerspec spiSpec;
@@ -59,9 +62,9 @@ if((timer_create(CLOCK_REALTIME, &spiEvent, &spiTimer)) < 0)
 }
 
 //Setting the time and starting the timer
-spiSpec.it_interval.tv_nsec = 0;//100000000; //To poll the slave every 1s
+spiSpec.it_interval.tv_nsec = 0;
 spiSpec.it_interval.tv_sec  = 2;
-spiSpec.it_value.tv_nsec    = 0;//100000000;
+spiSpec.it_value.tv_nsec    = 0;
 spiSpec.it_value.tv_sec     = 2;
 
 if((timer_settime(spiTimer, 0, &spiSpec, NULL)) < 0)
@@ -70,9 +73,8 @@ if((timer_settime(spiTimer, 0, &spiSpec, NULL)) < 0)
 }
 
 
-/***********************************************************************************/
+/*********************Configuring a 5 second timer to check remote node connection*********************/
 
-/*********************************************************************************/
 struct sigevent connectionEvent;
 struct sigaction connectionAction;
 struct itimerspec connectionSpec;
@@ -98,9 +100,9 @@ if((timer_create(CLOCK_REALTIME, &connectionEvent, &connectionTimer)) < 0)
 }
 
 //Setting the time and starting the timer
-connectionSpec.it_interval.tv_nsec = 0;//100000000; //To poll the slave every 1s
+connectionSpec.it_interval.tv_nsec = 0;
 connectionSpec.it_interval.tv_sec  = 1;
-connectionSpec.it_value.tv_nsec    = 0;//100000000;
+connectionSpec.it_value.tv_nsec    = 0;
 connectionSpec.it_value.tv_sec     = 8;
 
 if((timer_settime(connectionTimer, 0, &connectionSpec, NULL)) < 0)
@@ -108,27 +110,8 @@ if((timer_settime(connectionTimer, 0, &connectionSpec, NULL)) < 0)
     perror("Starting timer for checking connection failed");
 }
 
- /*******************************************************************************/
+ /*************************************************************************************************/
 mqd_t decisionQueue = mqueue_init(DECISIONQUEUENAME, DECISION_QUEUE_SIZE, sizeof(decisionStruct));
-
-//   mqd_t decisionQueue;
-//     struct mq_attr queue_attr;
-//     //printf("queue name in %s is %s\n",__func__,queue_name);
-//     //printf("queue size in %s is %d\n",__func__,queue_size);
-//     //printf("queue name in %s is %s",__func__,queue_name);
-//     queue_attr.mq_maxmsg  = DECISION_QUEUE_SIZE;
-//     queue_attr.mq_msgsize = sizeof(decisionStruct);
-//     //queue_attr.mq_flags   = O_NONBLOCK;
-//     decisionQueue = mq_open(DECISIONQUEUENAME, O_CREAT | O_RDWR , 0666, &queue_attr);
-
-
-// mqd_t spiQueue;
-// struct mq_attr queue_attr;
-// queue_attr.mq_maxmsg  = SPI_QUEUE_SIZE;
-// queue_attr.mq_msgsize = sizeof(spiStruct);
-// //queue_attr.mq_flags   = O_NONBLOCK;
-// spiQueue = mq_open(SPIQUEUENAME, O_CREAT | O_RDWR , 0666, &queue_attr);
-
 mqd_t spiQueue = mqueue_init(SPIQUEUENAME, SPI_QUEUE_SIZE, sizeof(spiStruct));
 mqd_t logQueue = mqueue_init(LOGQUEUENAME, LOG_QUEUE_SIZE, sizeof(logStruct));
 
@@ -155,69 +138,40 @@ while(1)
     int k;
 	if(connection_handler)
 	{
-	connection_handler=0;
-	printf("Remote Node not active\n");
-	//led on
-	gpio_write_value(55,1);
-	dataToSendToLog.logLevel=alert;
-	dataToSendToLog.remoteStatus=notActive;
-	if(mq_send(logQueue,(char*)&dataToSendToLog,sizeof(logStruct),0)!=0)
-			{
+		connection_handler=0;
+		printf("Remote Node not active\n");
+
+		gpio_write_value(55,1); //turning on the LED if remote node is not active.
+
+		dataToSendToLog.logLevel=alert;
+		dataToSendToLog.remoteStatus=notActive;
+		if(mq_send(logQueue,(char*)&dataToSendToLog,sizeof(logStruct),0)!=0)
+		{
 				printf("Data sending from spitask to logTask failed 1");
-			}
+		}
 	}
 	else if(degradedState)
 	{
-		// if(c=0){
-		// 	gpio_write_value(56,0);
-		// 	c=1;
-		// }
-		// else
-		// {
-		// 	gpio_write_value(56,1);
-		// 	c=0;
-		// }
-		
-		
-					
+						
 		degradedState=0;
-		//if(!printOnlyOnce || recoveryIndiacation) 
-		//{
 		dataToSendToLog.logLevel=alert;
-		dataToSendToLog.remoteStatus=degraded;	
-		gpio_write_value(56,1);
+		dataToSendToLog.remoteStatus=degraded;
+
+		gpio_write_value(56,1); //turning on LED on pin 56 if remote node working in degraded state
 		//led blink
 		if(mq_send(logQueue,(char*)&dataToSendToLog,sizeof(logStruct),0)!=0)
-			{
-				printf("Data sending from spitask to logTask failed 2");
-			}
-		
-		//printOnlyOnce=1;
-		//}
-		//toggle_led();
+		{
+			printf("Data sending from spitask to logTask failed 2");
+		}
 	}
 	else
 	{			
-		
-		// //if(recoveryIndiacation)
-		// //{
-		// dataToSendToLog.logLevel=alert;
-		// dataToSendToLog.remoteStatus=active;
-		// if(mq_send(logQueue,(char*)&dataToSendToLog,sizeof(logStruct),0)!=0)
-		// 	{
-		// 		printf("Data sending from spitask to logTask failed");
-		// 	}
-		// recoveryIndiacation=1;
-		// //}
 		dataToSendToLog.logLevel=none_state;
-
-		//gpio_write_value(56,1);
 	}
 	
-
+	/*Polling the remote node*/
     if(spi_handler==1)
     {
-        //printf("Entered while wala handler\n");
         spi_handler=0;
         tx=POLL_REQ;
         rx=0;
@@ -229,14 +183,14 @@ while(1)
 
     if(present_trid != prev_trid )
 		{
-			
-        checkDegradedState(present_source);
+		gpio_write_value(55,0); //turning off the led if remote node is active	
+        checkDegradedState(present_source); 
 		if((timer_settime(connectionTimer, 0, &connectionSpec, NULL)) < 0)
         {
             perror("Starting timer for checking connection failed");
      	}
-			//printf("Entered if condition\n");
-			for(k=0;k<100000;k++);
+			
+			for(k=0;k<100000;k++); //Giving inline waits to synchronise the communication
 			for(k=0;k<100000;k++);
 			for(k=0;k<100000;k++);
 			for(k=0;k<100000;k++);
@@ -244,9 +198,8 @@ while(1)
 			tx1=DATA_REQ;
 			rx1=0;
 
-			spi_transfer(spi_fd, &tx1, &rx1, 2);
-			//printf("requesting valid data %x\n",default_tx1);
-			//printf("valid data is %x\n",rx1);
+			spi_transfer(spi_fd, &tx1, &rx1, 2); 
+	
             dataToSend.source=present_source;
             dataToSend.data=rx1;
 			dataToSendToLog.source = present_source;
@@ -254,17 +207,6 @@ while(1)
 
 			printf("Data  is %x\n",dataToSendToLog.data);
 			printf("Source is %x\n",dataToSendToLog.source);
-
-
-			// if(dataToSend.source==0x55)
-			// {
-			// 	dataReceived.sourceAndCommand=0x00;
-			// }
-			// else if(dataToSend.source=0xaa)
-			// {
-			// 	dataReceived.sourceAndCommand=0x01;
-			// }
-//			spi_transfer(spi_fd, &dataReceived.sourceAndCommand, &rx1, 2);
 
             if(mq_send(decisionQueue,(char*)&dataToSend,sizeof(decisionStruct),0)!=0)
 			{
@@ -293,18 +235,26 @@ while(1)
     for(k=0;k<100000;k++);
     for(k=0;k<100000;k++);
     for(k=0;k<100000;k++);	        
-    }
-// if(connection_handler==1)
-// {
-// 	connection_handler=0;
-// 	printf("Remote Node not active\n");
-// 	if((timer_settime(connectionTimer, 0, &connectionSpec, NULL)) < 0)
-// {
-//     perror("Starting timer for checking connection failed in while loop");
-// }
-// }
+    
+	}
+	if(exitThread)
+	{
+		break;
+	}
 }
 
+mq_close(decisionQueue);
+mq_close(spiQueue);
+mq_close(logQueue);
+
+mq_unlink(DECISIONQUEUENAME);
+mq_unlink(SPIQUEUENAME);
+mq_unlink(LOGQUEUENAME);
+
+timer_delete(spiTimer);
+timer_delete(connectionTimer);
+
+pthread_exit(NULL);
 }
 
 int spi_init()
@@ -319,9 +269,7 @@ int spi_init()
         abort();
     }
     
-	/*
-	 * spi mode
-	 */
+
 	ret = ioctl(fd, SPI_IOC_WR_MODE32, &mode);
 	if (ret == -1)
 	{
@@ -336,9 +284,6 @@ int spi_init()
         abort();
     }
 
-	/*
-	 * bits per word
-	 */
 	ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
 	if (ret == -1)
 	{
@@ -353,9 +298,6 @@ int spi_init()
         abort();
     }
 
-	/*
-	 * max speed hz
-	 */
 	ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 	if (ret == -1)
 	{
@@ -424,7 +366,7 @@ void checkDegradedState(uint8_t source)
 	{
 		soilMoisture++;
 	}
-	if(abs(temp-soilMoisture)>5)
+	if(abs(temp-soilMoisture)>10)
 	{
 		printf("------------------------------------>DEGRADED STATE<-------------------------------------- \n");
 		degradedState=1;
@@ -440,16 +382,21 @@ void checkDegradedState(uint8_t source)
 	
 }
 
-static void signal_handler(int sig, siginfo_t * var1, void* var2)
+void signal_handler(int sig, siginfo_t * var1, void* var2)
 {
 switch(sig)
 {
-    case 34: spi_handler=1;
-    break;
+    case 2:
+		printf("SIGINT signal is received\n ----------> Exiting thread <---------\n");
+		exitThread = true;		
+		break;
+	case 34: 
+		spi_handler=1;
+    	break;
 
-    case 35: connection_handler=1;
-    //printf("Remote Node not active\n");
-    break;
+    case 35: 
+		connection_handler=1;
+    	break;
 }
 }
 

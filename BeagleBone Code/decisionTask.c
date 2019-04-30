@@ -1,6 +1,15 @@
+/*************************************************************************************************************************
+* File name   : decisionTask.c                                                                                           *
+* Authors     : Puneet Bansal and  Nachiket Kelkar                                                                       *
+* Description : Responsible for starting decision task which sends command signal based on received sensor data          *
+* Tools used  : GNU make, gcc, arm-linux-gnueabihf-gcc                                                                   *
+**************************************************************************************************************************/
+
 #include "genericIncludes.h"
 #include "decisionTask.h"
 #include "mq.h"
+
+extern void signal_handler(int , siginfo_t * , void* );
 
 void *decisionTaskRoutine(void *dataObj)
 {
@@ -15,22 +24,6 @@ mqd_t logQueue = mqueue_init(LOGQUEUENAME, LOG_QUEUE_SIZE, sizeof(logStruct));
 
 dataToSendToLog.logLevel = info;
 dataToSendToLog.type = actuation;
-
-// mqd_t decisionQueue;
-//     struct mq_attr queue_attr;
-//     //printf("queue name in %s is %s\n",__func__,queue_name);
-//     //printf("queue size in %s is %d\n",__func__,queue_size);
-//     //printf("queue name in %s is %s",__func__,queue_name);
-//     queue_attr.mq_maxmsg  = DECISION_QUEUE_SIZE;
-//     queue_attr.mq_msgsize = sizeof(decisionStruct);
-//     //queue_attr.mq_flags   = O_NONBLOCK;
-//     decisionQueue = mq_open(DECISIONQUEUENAME, O_CREAT | O_RDWR , 0666, &queue_attr);
-
-// mqd_t spiQueue;
-//     struct mq_attr queue_attr;
-//     queue_attr.mq_maxmsg  = SPI_QUEUE_SIZE;
-//     queue_attr.mq_msgsize = sizeof(spiStruct);
-//     spiQueue = mq_open(SPIQUEUENAME, O_CREAT | O_RDWR , 0666, &queue_attr);
 
 if(decisionQueue < 0)
 {
@@ -47,15 +40,15 @@ if(logQueue < 0)
 
 while(1)
 {
-//printf("BEFORE MQ REC in decision task\n");
+
 int ret = mq_receive(decisionQueue,(char*)&dataReceived,sizeof(decisionStruct),0);
 if(ret<0)
 {
-//printf("mq receive failed in decision task\n");
+    //printf("mq receive failed in decision task\n");
 }
 else
 {
-    printf("Data received from spi task is %x from source %x\n",dataReceived.data,dataReceived.source);
+    //printf("Data received from spi task is %x from source %x\n",dataReceived.data,dataReceived.source);
     if(dataReceived.source == 0x55)
     {
         uint16_t temp;
@@ -116,8 +109,19 @@ else
     
      
 }
+if(exitThread)
+		{
+			break;
+		}
 
 }
+mq_close(decisionQueue);
+mq_close(spiQueue);
+mq_close(logQueue);
+mq_unlink(DECISIONQUEUENAME);
+mq_unlink(SPIQUEUENAME);
+mq_unlink(LOGQUEUENAME);
+pthread_exit(NULL);
 }
 
 uint8_t getCommand(uint16_t data)
