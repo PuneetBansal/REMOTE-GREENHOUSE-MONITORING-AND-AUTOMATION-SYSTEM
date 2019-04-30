@@ -1,8 +1,8 @@
 /*
  * main.h
  *
- *  Created on: Mar 28, 2015
- *      Author: akobyljanec
+ *  Created on: April 21, 2019
+ *      Author: Nachiket Kelkar and Puneet Bansal
  */
 
 #ifndef MAIN_H_

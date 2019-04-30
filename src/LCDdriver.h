@@ -2,7 +2,7 @@
  * LCDdriver.h
  *
  *  Created on: Apr 15, 2019
- *      Author: nachi
+ *      Author: nachiket kelkar & puneet bansal
  */
 
 #ifndef SRC_LCDDRIVER_H_

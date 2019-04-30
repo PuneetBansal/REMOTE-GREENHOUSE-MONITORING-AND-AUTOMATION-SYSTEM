@@ -2,7 +2,7 @@
  * sensor.h
  *
  *  Created on: Apr 21, 2019
- *      Author: nachi
+ *      Author: nachiket kelkar & puneet bansal
  */
 
 #ifndef SRC_SENSOR_H_
@@ -14,6 +14,8 @@
 #define SM_SOURCE_ID     0xAA
 #define SEQUENCE_NO      3
 #define SENS_TASK_ID     1
+
+
 /*
  * Function name: moisture_sensor_init()
  * Description  : This function initializes ADC to get the analog voltage from soil moisture
@@ -41,7 +43,7 @@ uint32_t moisture_data();
  * @comments    : The mode can be Master or Slave
  * @return      : void
  */
-void temp_sens_init(uint32_t mode, uint32_t clk_speed);
+void temp_sens_init(uint32_t, uint32_t);
 
 
 /*
@@ -98,6 +100,6 @@ void MoistureCallback();
  * @param       : void
  * @return      : void
  */
-float temperature_in_c(uint16_t hex_val);
+float temperature_in_c(uint16_t);
 
 #endif /* SRC_SENSOR_H_ */

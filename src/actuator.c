@@ -2,7 +2,7 @@
  * actuator.c
  *
  *  Created on: Apr 22, 2019
- *      Author: punee
+ *      Author: puneet bansal and Nachiket Kelkar
  */
 
 #include <stdint.h>
@@ -48,7 +48,6 @@ void LCDTask(void *pvParameters)
     lcd_write_string("Motor");
     LCDQueue=xQueueCreate(10, sizeof(LCDStruct));
     float val=0;
-//    uint8_t actData=0;
 
 while(1)
 {
@@ -60,8 +59,17 @@ while(1)
             if(dataReceived.task == 1)
             {
                 lcd_pos(1, 0);
+                lcd_write_string("        ");
+                lcd_pos(1, 0);
                 val=dataReceived.sensing_data*0.25;
-                lcd_print_float(val);
+                if(val != 0)
+                {
+                    lcd_print_float(val);
+                }
+                else
+                {
+                    lcd_write_string("SEN NC");
+                }
             }
             else
             {
@@ -69,7 +77,6 @@ while(1)
                 lcd_write_string("        ");
                 lcd_pos(3, 0);
                 lcd_print_digit((long)dataReceived.actuation_data);
-                UARTprintf("Temperature values\n");
             }
             break;
         case 0xaa:
@@ -79,7 +86,14 @@ while(1)
                 lcd_write_string("        ");
                 val=dataReceived.sensing_data;
                 lcd_pos(1, 8);
-                lcd_print_float(val);
+                if(val != 0)
+                {
+                    lcd_print_float(val);
+                }
+                else
+                {
+                    lcd_write_string("SEN NC");
+                }
             }
             else
             {
@@ -87,14 +101,9 @@ while(1)
                 lcd_write_string("        ");
                 lcd_pos(3, 8);
                 lcd_print_digit(dataReceived.actuation_data);
-                UARTprintf("Soil Moisture Values\n");
                 break;
             }
          }
-    }
-    else
-    {
-//        UARTprintf("Reading from LCD queue failed\n");
     }
 }
 
@@ -112,11 +121,11 @@ void FanTask(void *pvParameters)
         xTaskNotifyWait(0x00, 0xffffffff , &notificationVal , portMAX_DELAY);
         switch(notificationVal)
         {
-        case 0: UARTprintf("Turn off the fan");
+        case 0: UARTprintf("Turn off the fan\n");
         GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_0, 0);
         break;
 
-        case 1: UARTprintf("Turn on the fan");
+        case 1: UARTprintf("Turn on the fan\n");
         GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_0, GPIO_PIN_0);
         break;
         }
@@ -124,14 +133,13 @@ void FanTask(void *pvParameters)
 
 }
 
-int duty_cycle;
+int duty_cycle = 0;
 
 void MotorTask(void *pvParameters)
 {
 //    UARTprintf("Entered Motor Task");
     uint32_t notificationVal;
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
-//    GPIOPinTypeGPIOOutput(GPIO_PORTG_BASE, GPIO_PIN_0);
 
     GPIOPadConfigSet(GPIO_PORTG_BASE, GPIO_PIN_0, GPIO_STRENGTH_4MA, GPIO_PIN_TYPE_STD);
     GPIODirModeSet(GPIO_PORTG_BASE, GPIO_PIN_0, GPIO_DIR_MODE_OUT);
@@ -142,37 +150,24 @@ void MotorTask(void *pvParameters)
     /* Start the timer after 100ms */
     BaseType_t return_val = xTimerStart(MotorTimer, pdMS_TO_TICKS(0));
 
-    duty_cycle = 1;
     while(1)
     {
-//        xTaskNotifyWait(0x00, 0xffffffff , &notificationVal , portMAX_DELAY);
-//        switch(notificationVal)
-//        {
-//        case 0: UARTprintf("Turn off the motor");
-//        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, 0);
-//        break;
-//
-//        case 1: UARTprintf("Turn on the motor");
-//        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, GPIO_PIN_0);
-//        break;
-//        }
-//        duty_cycle = 1;
-
-//        }
+        xTaskNotifyWait(0x00, 0xffffffff , &notificationVal , portMAX_DELAY);
+        duty_cycle = notificationVal;
     }
 }
 
 void MotorCallback(TimerHandle_t xtimer)
 {
     static int x = 0;
-    if(x <= duty_cycle)
+    if(x < duty_cycle)
     {
-        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, 0);
+        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, GPIO_PIN_0);
         x ++;
     }
     else
     {
-        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, GPIO_PIN_0);
+        GPIOPinWrite(GPIO_PORTG_BASE, GPIO_PIN_0, 0);
         x ++;
     }
     if(x == 10)
@@ -180,9 +175,3 @@ void MotorCallback(TimerHandle_t xtimer)
         x = 0;
     }
 }
-
-
-
-
-
-

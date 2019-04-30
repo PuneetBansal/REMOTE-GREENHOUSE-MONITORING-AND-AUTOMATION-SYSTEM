@@ -2,7 +2,7 @@
  * spi.h
  *
  *  Created on: Apr 15, 2019
- *      Author: nachi
+ *      Author: nachiket kelkar & puneet bansal
  */
 
 #ifndef SRC_SPI_H_
@@ -69,8 +69,26 @@ void InterBoardSPI(void *pvParameters);
  * @param       : uint16_t (control message received from the beagle bone)
  * @return      : void
  */
-void decode_message(uint16_t ctrl_msg);
-void test_function();
+void decode_message(uint16_t);
 
-void self_control(IBStruct rec_msg);
+
+/*
+ * Function name: spi_state_machine()
+ * Description  : This function waits for the message from the sensor tasks, then it send the data
+ *                to the control node when the SPI transfer is initiated by the control node.
+ *                It gets the control message from the control node and sends it for actuation.
+ * @param       : void
+ * @return      : void
+ */
+void spi_state_machine();
+
+
+/*
+ * Function name: self_control()
+ * Description  : This function is called when controller node is not present so that the
+ *                actuators can be controlled in reduced state.
+ * @param       : IBStruct (received message)
+ * @return      : void
+ */
+void self_control(IBStruct);
 #endif /* SRC_SPI_H_ */

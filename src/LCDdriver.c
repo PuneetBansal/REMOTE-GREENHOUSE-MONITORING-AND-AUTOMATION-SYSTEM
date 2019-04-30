@@ -2,7 +2,7 @@
  * LCDdriver.c
  *
  *  Created on: Apr 15, 2019
- *      Author: nachi
+ *      Author: nachiket kelkar & puneet bansal
  */
 
 #include <stdint.h>
@@ -32,6 +32,7 @@ void lcd_init()
 
 void lcd_write_data(char data)
 {
+    /* Write data on pins for LCD */
     GPIOPinWrite(GPIO_PORTP_BASE, GPIO_PIN_0, GPIO_PIN_0);
     GPIOPinWrite(GPIO_PORTP_BASE, GPIO_PIN_1, 0);
 
@@ -53,6 +54,7 @@ void lcd_write_string(char* data)
 
 void lcd_write_command(uint8_t command)
 {
+    /* Write data on pins for LCD */
     GPIOPinWrite(GPIO_PORTP_BASE, GPIO_PIN_0, 0);
     GPIOPinWrite(GPIO_PORTP_BASE, GPIO_PIN_1, 0);
 
@@ -63,6 +65,7 @@ void lcd_write_command(uint8_t command)
 
 void latch_data()
 {
+    /* Write data on pins for LCD */
     GPIOPinWrite(GPIO_PORTP_BASE, GPIO_PIN_4, GPIO_PIN_4);
     delay(1000);
     GPIOPinWrite(GPIO_PORTP_BASE, GPIO_PIN_4, 0);
@@ -121,7 +124,6 @@ void lcd_print_digit(long no)
     char buffer[10];
     ltoa(no, buffer);
     lcd_write_string(buffer);
-//    lcd_write_data((char)(no + 48));
 }
 
 void lcd_print_float(float no)

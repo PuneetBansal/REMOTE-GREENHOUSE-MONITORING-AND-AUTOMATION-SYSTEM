@@ -2,7 +2,7 @@
  * Logger.c
  *
  *  Created on: Apr 17, 2019
- *      Author: nachi
+ *      Author: nachiket kelkar & puneet bansal
  */
 #include <stdint.h>
 #include <stdbool.h>
@@ -20,9 +20,11 @@
 
 void Logger_Init(void)
 {
+    /* Enable UART pins */
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
 
+    /* Configure GPIO pins as UART */
     GPIOPinConfigure(GPIO_PA0_U0RX);
     GPIOPinConfigure(GPIO_PA1_U0TX);
     ROM_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);

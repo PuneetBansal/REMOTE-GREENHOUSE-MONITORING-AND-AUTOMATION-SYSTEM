@@ -2,7 +2,7 @@
  * Logger.h
  *
  *  Created on: Apr 17, 2019
- *      Author: nachi
+ *      Author: nachiket kelkar & puneet bansal
  */
 
 #ifndef SRC_LOGGER_H_

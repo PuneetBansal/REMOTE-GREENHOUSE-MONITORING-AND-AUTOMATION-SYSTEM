@@ -1,7 +1,9 @@
 /* FreeRTOS 8.2 Tiva Demo
  *
  * main.c
- * Reference: The project is based on the freeRTOS example code on https://github.com/akobyl/TM4C129_FreeRTOS_Demo/blob/master/main.c
+ * Author: Nachiket Kelkar and Puneet Bansal
+ * Reference: The project is based on the freeRTOS example code on
+ * https://github.com/akobyl/TM4C129_FreeRTOS_Demo/blob/master/main.c
  */
 
 #include <stdint.h>
@@ -83,138 +85,6 @@ int main(void)
 
     vTaskStartScheduler();
     UARTprintf("I should not have come here\n");
-
-//    SYSTEM_CLOCK
-//    int buffer[6] = {0x05,0x06,0x09,0xab,0x55,0x45};
-//    SSIIntRegister(SSI2_BASE, TXFF_interrupt);
-//    SSIIntClear(SSI2_BASE, SSI_TXEOT);
-//    SSIIntEnable(SSI2_BASE, SSI_TXEOT);
-
-//    ADC testing
-//    uint32_t adc_value;
-//    adc_init();
-//    while(1)
-//    {
-//        adc_value = adc_get_data();
-//        UARTprintf("adc_value = %d\n\r",adc_value);
-//    }
-//      SPI testing
-//    static uint8_t trid;
-//    int i;
-//    uint16_t packet;
-//    uint8_t source1 = 0x30;
-//    uint8_t source2 = 0x03;
-//    uint16_t data;
-//    uint16_t value = 0xcc55;
-//    spi_init(SLAVE, 500000);
-//    spi_data_write(0x0011, 1);
-//    UARTprintf("Going inside while\n");
-//    while(1)
-//    {
-//        packet = (uint16_t)++trid<<8 | source1;
-//        spi_data_write(packet, 1);
-//        data = spi_data_read();
-//        UARTprintf("RX 1 - %x\n\r",data);
-//        spi_data_write(value, 1);
-//        data = spi_data_read();
-//        UARTprintf("RX 2 - %x\n\r",data);
-//        spi_data_write(packet, 1);
-//        for(i = 0; i<10000; i++);
-//        for(i = 0; i<10000; i++);
-//        for(i = 0; i<10000; i++);
-//
-//        packet = (uint16_t)++trid<<8 | source2;
-//        spi_data_write(packet, 1);
-//        data = spi_data_read();
-//        UARTprintf("RX 1 - %x\n\r",data);
-//        spi_data_write(0xcc66, 1);
-//        data = spi_data_read();
-//        UARTprintf("RX 2 - %x\n\r",data);
-//        spi_data_write(packet, 1);
-//    }
-
-
-//    LCD testing
-//    lcd_init();
-//    lcd_on();
-//    lcd_write_string("Temp  : 23.576");
-//    lcd_pos(1, 0);
-//    lcd_write_string("Mois  : 56%");
-//    lcd_pos(2, 0);
-//    lcd_write_string("Fspeed: 10%");
-//    lcd_pos(3, 0);
-//    lcd_write_string("Motor : ON");
-//    lcd_print_float(23.56);
-
-//    PWM test
-//    motor_control_init();
-//    motor_control_config(500, 25);
-//    while(1)
-//    {
-//
-//    }
-
-//  Temperature Sensor testing
-//    char tempbuffer[10];
-//    uint16_t buffer;
-//    uint32_t i;
-//    float temp;
-//    temp_sens_init(MASTER, 100000);
-//    while(1)
-//    {
-//        buffer = temp_data_get();
-//        temp = temperature_in_c(buffer);
-//        UARTprintf("D2 is %d\n",((buffer>>2) && 0x01));
-//        sprintf(tempbuffer,"%f",temp);
-//        UARTprintf("Temperature is %s\n",tempbuffer);
-//        for(i=0; i<1000000; i++);
-//        for(i=0; i<1000000; i++);
-//        for(i=0; i<1000000; i++);
-//        for(i=0; i<1000000; i++);
-//        for(i=0; i<1000000; i++);
-//    }
-//    return 0;
-}
-
-void motor_control_init()
-{
-//    SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
-//    SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
-//    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-//    GPIOPinConfigure(GPIO_PF1_M0PWM1);
-//    GPIOPinTypePWM(GPIO_PORTF_BASE, GPIO_PIN_1);
-//    PWMGenConfigure(PWM0_BASE, PWM_GEN_0, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
-
-    SysCtlPWMClockSet(SYSCTL_PWMDIV_1);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
-    GPIOPinConfigure(GPIO_PG0_M0PWM4);
-    GPIOPinTypePWM(GPIO_PORTG_BASE, GPIO_PIN_0);
-    PWMGenConfigure(PWM0_BASE, PWM_GEN_2, PWM_GEN_MODE_UP_DOWN | PWM_GEN_MODE_NO_SYNC);
-}
-
-
-
-void motor_control_config(uint32_t period_in_khz, uint8_t duty_cycle)
-{
-    uint64_t N;
-    uint32_t width;
-    N = 120000/period_in_khz;
-//    PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, N);
-    PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, 64000);
-    width = duty_cycle / 100;
-//    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, PWMGenPeriodGet(PWM0_BASE, PWM_GEN_2) * width);
-    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_0, PWMGenPeriodGet(PWM0_BASE, PWM_GEN_2) / 70000);
-    PWMOutputState(PWM0_BASE, PWM_OUT_2_BIT, true);
-    PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-}
-
-
-void TXFF_interrupt()
-{
-    SSIIntClear(SSI2_BASE, SSI_TXEOT);
-    SSIIntDisable(SSI2_BASE, SSI_TXEOT);
-    UARTprintf("Interrupt happened");
 }
 
 /*  ASSERT() Error function
