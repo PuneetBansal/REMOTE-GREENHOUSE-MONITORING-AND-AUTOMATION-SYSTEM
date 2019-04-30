@@ -1,5 +1,5 @@
 mainTask: mainTask.o
-	arm-linux-gnueabihf-gcc mainTask.c spiTask.c -o mainTask -pthread -lrt
+	arm-linux-gnueabihf-gcc mainTask.c spiTask.c myTimer.c decisionTask.c mq.c loggerTask.c gpio.c -o mainTask -pthread -lrt
 spi: spi.c
 	gcc spi.c -o spi	
 spi_cc: spi.c gpio.c

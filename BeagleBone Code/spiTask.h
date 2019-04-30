@@ -7,8 +7,12 @@
 #define SOURCE_BITMASK 0x00ff
 #define TRID_BITMASK 0xff00
 uint8_t prev_trid;
+uint8_t degradedState;
 
 void *spiTaskRoutine(void *);
 int spi_init();
 void spi_transfer(int , uint16_t const *, uint16_t const *, size_t);
+void checkDegradedState(uint8_t);
+
+uint8_t temp,soilMoisture;
 

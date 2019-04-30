@@ -5,14 +5,34 @@
 /* Message queues for all the tasks */
 #define SPIQUEUENAME "/spiqueue1"
 #define DECISIONQUEUENAME "/decisionqueue1"
-#define LOGQUEUENAME "/logqueuequeue1"
+#define LOGQUEUENAME "/logqueuequeue10"
 
 /* Message queue size for all the tasks */
 #define SPI_QUEUE_SIZE	10
 #define DECISION_QUEUE_SIZE	10
 #define LOG_QUEUE_SIZE	10
 
-/* SStructure to communicate to the maintask*/
+
+typedef enum
+{
+info,
+alert,
+debug
+}loglevel_enum;
+
+typedef enum{
+sensing,
+actuation,
+}type_enum;
+
+typedef enum{
+none_state,
+active,
+degraded,
+notActive,
+}remoteNodeStatus_typedef;
+
+/* Structure to communicate to the maintask*/
 typedef struct
 {	uint16_t sourceAndCommand;
 }spiStruct;
@@ -26,7 +46,11 @@ typedef struct{
 typedef struct{
 	uint8_t source;
 	uint16_t data;
+	loglevel_enum logLevel; 
+	type_enum type;	
+	remoteNodeStatus_typedef remoteStatus;
 }logStruct;
+
 
 /*user defined functions*/
 

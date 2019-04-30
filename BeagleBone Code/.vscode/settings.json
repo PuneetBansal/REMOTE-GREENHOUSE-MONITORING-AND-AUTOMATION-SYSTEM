@@ -8,6 +8,9 @@
         "spitask.h": "c",
         "genericincludes.h": "c",
         "decisiontask.h": "c",
-        "pthread.h": "c"
+        "pthread.h": "c",
+        "loggertask.h": "c",
+        "mytimer.h": "c",
+        "string.h": "c"
     }
 }

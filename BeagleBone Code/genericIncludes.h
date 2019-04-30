@@ -10,5 +10,9 @@
 #include <time.h>
 #include <signal.h>
 #include <linux/spi/spidev.h>
+#include "gpio.h"
 
 uint8_t spi_handler;
+uint8_t connection_handler;
+uint8_t recoveryIndiacation;
+uint8_t printOnlyOnce;

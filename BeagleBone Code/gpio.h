@@ -102,3 +102,6 @@ int gpio_open_value(int);
 * Comments:- pin state: Pin state can be high or low.
 */
 int gpio_read_val_with_fd(int);
+
+void pwm_generate(uint8_t);
+void toggle_led();

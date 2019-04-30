@@ -72,7 +72,7 @@ void gpio_write_value(int gpio_pin, int gpio_value)
 	//if(is_pin_valid(gpio_pin))
 	{
 		sprintf(file,"/sys/class/gpio/gpio%d/value",gpio_pin);
-        printf("file name is %s\n",file);
+        //printf("file name is %s\n",file);
 		
         fp = open(file,O_RDWR);
 
@@ -97,6 +97,32 @@ void gpio_write_value(int gpio_pin, int gpio_value)
 		//printf("Enter valid pin number");
 	}
 	free(file);
+}
+
+void pwm_generate(uint8_t duty_cycle)
+{
+	int i;
+	// while(1)
+	// {
+	for(i=0;i<duty_cycle;i++)
+	{
+		gpio_write_value(56,1);
+	}
+	for(i=duty_cycle;i<10;i++)
+	{
+		gpio_write_value(56,0);
+	}
+	// }
+}
+
+void toggle_led()
+{
+	uint32_t i;
+	i=0;
+	gpio_write_value(55,1);
+	for(i=0;i<5000000;i++);
+	gpio_write_value(55,0);
+	for(i=0;i<5000000;i++);
 }
 
 /*
